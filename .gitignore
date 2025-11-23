@@ -13,3 +13,6 @@ doppler.config.json
 
 # Local env
 .env
+
+# Pre-commit setup
+.pre-commit-config.yaml

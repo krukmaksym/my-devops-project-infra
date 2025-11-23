@@ -15,7 +15,7 @@ variable "vpc_cidr" {
   default     = "10.10.10.0/24"
 }
 
-variable "environment" {    
+variable "environment" {
   description = "DigitalOcean env to provision"
   type        = string
 
