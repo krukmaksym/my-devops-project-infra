@@ -1,0 +1,15 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+
+# Terragrunt
+.terragrunt-cache/
+
+# Doppler
+doppler.config.json
+
+# Local env
+.env
