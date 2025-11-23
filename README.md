@@ -1,2 +1,12 @@
 # my-devops-project-infra
-My small pet project to master senior devops skills, like IaaS, K8s, CI/CD, GitOps. Hosted on DigitalOcean.
+
+Infrastructure-as-Code project designed to master Senior DevOps / SRE skills:
+
+- Terraform + Terragrunt
+- Kubernetes (DigitalOcean DOKS)
+- GitOps (ArgoCD)
+- CI/CD pipelines
+- Observability stack (Prometheus / Grafana / Loki)
+- Secrets management with Doppler
+
+The infrastructure is hosted on DigitalOcean and follows production-grade patterns.
