@@ -18,5 +18,4 @@ variable "vpc_cidr" {
 variable "environment" {
   description = "DigitalOcean env to provision"
   type        = string
-
 }
