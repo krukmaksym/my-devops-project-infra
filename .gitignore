@@ -14,3 +14,5 @@ doppler.config.json
 
 # Local env
 .env
+
+.DS_Store
