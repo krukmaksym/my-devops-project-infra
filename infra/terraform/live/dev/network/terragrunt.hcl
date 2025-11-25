@@ -9,3 +9,12 @@ include "env" {
 terraform {
   source = "../../../modules/network"
 }
+
+# inputs = {
+#   do_token = run_cmd("doppler", "secrets", "get",
+#     "--project", "my-devops-project",
+#     "--config", "dev",
+#     "DIGITALOCEAN_TOKEN",
+#     "--plain"
+#   )
+# }

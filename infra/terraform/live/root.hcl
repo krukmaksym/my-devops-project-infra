@@ -2,17 +2,21 @@ locals {
   project = "my-devops-project"
 }
 
-remote_state {
-  backend = "remote"
-
-  config = {
+generate "backend" {
+  path      = "backend.tf"
+  if_exists = "overwrite"
+  contents  = <<EOF
+terraform {
+  cloud {
     hostname     = "app.terraform.io"
     organization = "my-devops-project"
 
-    workspaces = {
-      name = "${local.project}-${path_relative_to_include()}"
+    workspaces {
+      name = "${local.project}-${replace(path_relative_to_include(), "/", "-")}"
     }
   }
+}
+EOF
 }
 
 generate "provider" {

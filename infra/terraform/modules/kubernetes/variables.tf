@@ -1,7 +1,7 @@
-variable "do_token" {
-  description = "DigitalOcean token value"
-  type        = string
-}
+# variable "do_token" {
+#   type = string
+#   sensitive = true
+# }
 
 variable "region" {
   description = "DigitalOcean region"
@@ -18,12 +18,6 @@ variable "k8s_version" {
   description = "value"
   type        = string
   default     = "1.34.0-do.0"
-}
-
-variable "owner" {
-  description = "DigitalOcean resource owner"
-  type        = string
-  default     = "DevOps Team"
 }
 
 variable "vpc_id" {
@@ -97,4 +91,9 @@ variable "monitoring_max_nodes" {
   description = "Maximum number of nodes in the monitoring node pool when autoscaling is enabled"
   type        = number
   default     = 2
+}
+
+variable "tags" {
+  description = "Tags to be applied for resource"
+  type        = set(string)
 }

@@ -1,5 +1,4 @@
 locals {
-  # визначає environment з директорії dev/stage/prod
   env = basename(dirname(get_terragrunt_dir()))
 
   common_tags = {

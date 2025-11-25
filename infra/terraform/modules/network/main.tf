@@ -6,7 +6,6 @@ terraform {
     }
   }
   required_version = "1.14.0"
-  backend "remote" {}
 }
 
 resource "digitalocean_vpc" "vpc" {

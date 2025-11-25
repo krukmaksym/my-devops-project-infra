@@ -8,10 +8,6 @@ terraform {
   required_version = "1.14.0"
 }
 
-provider "digitalocean" {
-  token = var.do_token
-}
-
 resource "digitalocean_kubernetes_cluster" "k8s" {
   name    = "${var.environment}-cluster"
   region  = var.region
@@ -45,12 +41,7 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
       },
     )
 
-    tags = [
-      "project:my-devops-project",
-      "env:${var.environment}",
-      "owner:${var.owner}",
-      "pool:app",
-    ]
+    tags = var.tags
 
     taint {
       key    = "service"
@@ -58,12 +49,6 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
       effect = "NoSchedule"
     }
   }
-
-  tags = [
-    "project:my-devops-project",
-    "env:${var.environment}",
-    "owner:${var.owner}",
-  ]
 
   lifecycle {
     prevent_destroy = true
@@ -90,18 +75,13 @@ resource "digitalocean_kubernetes_node_pool" "monitoring" {
     },
   )
 
-  tags = [
-    "project:my-devops-project",
-    "env:${var.environment}",
-    "owner:${var.owner}",
-    "pool:monitoring",
-  ]
-
   taint {
     key    = "service"
     value  = "monitoring"
     effect = "NoSchedule"
   }
+
+  tags = var.tags
 
   lifecycle {
     create_before_destroy = true
