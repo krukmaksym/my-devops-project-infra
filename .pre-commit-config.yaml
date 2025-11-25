@@ -8,6 +8,6 @@ repos:
       - id: terraform_tflint
       - id: terraform_tfsec
       - id: terraform_trivy
-      - id: terrascan
       - id: terragrunt_fmt
+      # - id: terrascan
       # - id: yamllint

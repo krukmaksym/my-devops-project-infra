@@ -1,0 +1,3 @@
+setup:
+  project: my-devops-project
+  config: stg
