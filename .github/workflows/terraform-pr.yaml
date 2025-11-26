@@ -20,5 +20,5 @@ jobs:
 
       - name: Run terraform fmt
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform fmt -check -recursive
