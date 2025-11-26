@@ -9,10 +9,8 @@ crash.log
 # Terragrunt
 .terragrunt-cache/
 
-# Doppler
-doppler.config.json
-
 # Local env
 .env
 
+# macOS
 .DS_Store
