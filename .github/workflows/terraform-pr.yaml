@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'infra/terraform/**'
-      - '.github/workflows/terraform-pr.yml'
+      - '.github/workflows/terraform-pr.yaml'
 
 jobs:
   security-gate:
