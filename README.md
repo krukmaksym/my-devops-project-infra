@@ -502,8 +502,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Contact & Portfolio
 
 **Author**: Maksym Kruk
-**LinkedIn**: [https://www.linkedin.com/in/krukmaksym/]
-**GitHub**: [https://github.com/krukmaksym]
+**LinkedIn**: [https://www.linkedin.com/in/krukmaksym/](LinkedIn)
+**GitHub**: [https://github.com/krukmaksym](GitHub)
 
 ---
 
