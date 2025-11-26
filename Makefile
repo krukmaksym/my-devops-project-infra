@@ -1,5 +1,5 @@
 # ====== CONFIG ======
-DOPPLER=doppler run -- sh -c
+DOPPLER=doppler run --name-transformer tf-var -- sh -c
 LIVE_DIR=infra/terraform/live
 
 # ====== HELPERS ======

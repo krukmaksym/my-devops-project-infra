@@ -1,13 +1,3 @@
-terraform {
-  required_providers {
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = "2.69.0"
-    }
-  }
-  required_version = "1.14.0"
-}
-
 resource "digitalocean_vpc" "vpc" {
   name     = "${var.environment}-vpc"
   region   = var.region

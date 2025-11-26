@@ -1,7 +1,7 @@
-# variable "do_token" {
-#   type      = string
-#   sensitive = true
-# }
+variable "do_token" {
+  type      = string
+  sensitive = true
+}
 
 variable "region" {
   description = "DigitalOcean region"

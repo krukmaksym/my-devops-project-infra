@@ -21,8 +21,20 @@ EOF
 
 generate "provider" {
   path      = "provider.tf"
-  if_exists = "overwrite"
+  if_exists = "overwrite_terragrunt"
   contents  = <<EOF
-provider "digitalocean" {}
+terraform {
+  required_providers {
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = "2.69.0"
+    }
+  }
+  required_version = "1.14.0"
+}
+
+provider "digitalocean" {
+  token = var.do_token
+}
 EOF
 }

@@ -15,12 +15,6 @@ dependency "network" {
 }
 
 inputs = {
-  # do_token = run_cmd("doppler", "secrets", "get",
-  #   "--project", "my-devops-project",
-  #   "--config", "dev",
-  #   "DIGITALOCEAN_TOKEN",
-  #   "--plain"
-  # )
   environment = "dev"
   vpc_id      = dependency.network.outputs.vpc_id
 }

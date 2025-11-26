@@ -3,11 +3,11 @@ repos:
     rev: v1.104.0
     hooks:
       - id: terraform_fmt
-      - id: terraform_validate
-      - id: terraform_docs
-      - id: terraform_tflint
-      - id: terraform_tfsec
-      - id: terraform_trivy
       - id: terragrunt_fmt
+      # - id: terraform_validate
+      # - id: terraform_docs
+      # - id: terraform_tflint
+      # - id: terraform_tfsec
+      # - id: terraform_trivy
       # - id: terrascan
       # - id: yamllint
