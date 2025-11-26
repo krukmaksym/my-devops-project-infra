@@ -1,24 +1,27 @@
-name: Run terraform fmt check on PRs
+name: Terraform PR Validation
+
 on:
   pull_request:
+    branches: [main]  # Only trigger on PRs to main
     paths:
-      - 'infrastructure/terraform/**'
-      - '.github/workflows/terraform-pr.yaml'
+      - 'infra/terraform/**'
+      - '.github/workflows/terraform-pr.yml'
 
 jobs:
   terraform-fmt:
-    name: Check terraform fmt
+    name: Check Terraform Formatting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.14.0
 
-      - name: Run terraform fmt
+      - name: Terraform Format Check
         run: |
+          echo "Checking Terraform formatting..."
           cd infra/terraform
-          terraform fmt -check -recursive
+          terraform fmt -check -recursive -diff
