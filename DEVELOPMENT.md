@@ -19,10 +19,10 @@
 
 #### Week 3-4: CI/CD Pipeline
 - [ ] Create GitHub Actions workflows
-- [ ] PR validation (terraform validate/plan)
-- [ ] Security scanning (trivy, checkov, tfsec)
-- [ ] Cost estimation (Infracost)
-- [ ] Auto-apply on merge to main
+  - [ ] PR validation (terraform validate/plan)
+  - [ ] Security scanning (trivy, checkov, tfsec)
+  - [ ] Cost estimation (Infracost)
+  - [ ] Auto-apply on merge to main
 - [ ] Add pipeline status badges
 - [ ] Configure notifications (Slack/Discord)
 
