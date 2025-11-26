@@ -16,7 +16,7 @@
 - [Project Structure](#project-structure)
 - [Getting Started](#getting-started)
 - [Current Implementation Status](#current-implementation-status)
-- [Development Roadmap](#development-roadmap)
+- [Development Roadmap](https://github.com/krukmaksym/my-devops-project-infra/blob/main/DEVELOPMENT.md)
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
