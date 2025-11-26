@@ -8,8 +8,28 @@ on:
       - '.github/workflows/terraform-pr.yml'
 
 jobs:
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - name: Check if PR is from fork
+        id: check
+        run: |
+          echo "🔍 Checking PR source..."
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" == "${{ github.repository }}" ]; then
+            echo "✅ PR is from the main repository"
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ PR is from a fork - skipping workflows for security"
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+
   terraform-fmt:
-    name: Check Terraform Formatting
+    name: Terraform Format Check
+    needs: security-gate
+    if: needs.security-gate.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,6 +42,6 @@ jobs:
 
       - name: Terraform Format Check
         run: |
-          echo "Checking Terraform formatting..."
+          echo "🎨 Checking Terraform formatting..."
           cd infra/terraform
           terraform fmt -check -recursive -diff
