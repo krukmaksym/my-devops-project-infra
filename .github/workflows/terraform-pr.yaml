@@ -1,0 +1,24 @@
+name: Run terraform fmt check on PRs
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/terraform-pr.yaml'
+
+jobs:
+  terraform-fmt:
+    name: Check terraform fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.14.0
+
+      - name: Run terraform fmt
+        run: |
+          cd infrastructure/terraform
+          terraform fmt -check -recursive
