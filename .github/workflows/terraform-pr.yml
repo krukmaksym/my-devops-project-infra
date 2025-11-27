@@ -53,6 +53,7 @@ jobs:
         uses: tj-actions/changed-files@v41
         with:
           files: |
+            infra/terraform/modules/**/*.tf 
             infra/terraform/live/**/*.tf
             infra/terraform/live/**/*.hcl
           json: true
