@@ -39,7 +39,7 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
       effect = "NoSchedule"
     }
   }
-  
+
   lifecycle {
     prevent_destroy = true
   }
