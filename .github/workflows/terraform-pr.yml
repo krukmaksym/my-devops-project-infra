@@ -78,7 +78,7 @@ jobs:
           
           # Separate module changes from live changes
           echo "=== DEBUG: Filtering for module changes ==="
-          module_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/modules/" || echo "")
+          module_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/modules/" || true)
           echo "Module changes result: '$module_changes'"
           echo "==========================="
           
@@ -153,13 +153,14 @@ jobs:
             exit 0
           fi
           
-          # Remove duplicates and create final matrix
           echo "=== DEBUG: Creating final JSON ==="
           matrix_json=$(echo "{\"include\":[${matrix_items}]}" | \
-            jq '.include | unique | {include: .}')
-          
+            jq -c '.include | unique | {include: .}')
+
           echo "✅ Final Matrix JSON: $matrix_json"
-          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$matrix_json" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   terraform-format:
     name: Terraform Format Check
