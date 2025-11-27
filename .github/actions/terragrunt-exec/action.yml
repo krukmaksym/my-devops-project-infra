@@ -1,0 +1,44 @@
+name: 'Execute Terragrunt Command'
+description: 'Run Terragrunt commands with Doppler'
+
+inputs:
+  working-directory:
+    description: 'Working directory'
+    required: true
+  command:
+    description: 'Terragrunt command to run (init, validate, plan, apply)'
+    required: true
+  doppler-token:
+    description: 'Doppler token'
+    required: true
+  extra-args:
+    description: 'Extra arguments for the command'
+    required: false
+    default: ''
+
+outputs:
+  output:
+    description: 'Command output'
+    value: ${{ steps.exec.outputs.output }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Execute Terragrunt
+      id: exec
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        DOPPLER_TOKEN: ${{ inputs.doppler-token }}
+      run: |
+        echo "🚀 Running: terragrunt ${{ inputs.command }} ${{ inputs.extra-args }}"
+        
+        output=$(doppler run --name-transformer tf-var -- \
+          terragrunt ${{ inputs.command }} ${{ inputs.extra-args }} 2>&1)
+        
+        echo "$output"
+        
+        # Save output for use in other steps
+        echo "output<<EOF" >> $GITHUB_OUTPUT
+        echo "$output" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
