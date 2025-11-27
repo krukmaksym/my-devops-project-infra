@@ -56,20 +56,20 @@ jobs:
             infra/terraform/modules/**/*.tf
             infra/terraform/live/**/*.tf
             infra/terraform/live/**/*.hcl
-          json: true
           base_sha: ${{ github.event.pull_request.base.sha }}
           sha: ${{ github.event.pull_request.head.sha }}
 
       - name: Set matrix for changed modules
         id: set-matrix
-        env:
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          echo "=== DEBUG: Changed files ==="
-          echo "$CHANGED_FILES"
+          # Use newline-separated output instead of JSON
+          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+
+          echo "=== DEBUG: Changed files raw ==="
+          echo "$changed_files"
           echo "==========================="
 
-          if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" == "[]" ] || [ "$CHANGED_FILES" == "" ]; then
+          if [ -z "$changed_files" ]; then
             echo "❌ No terraform files changed"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
@@ -78,14 +78,14 @@ jobs:
 
           echo "has_changes=true" >> $GITHUB_OUTPUT
 
-          # Separate module changes from live changes
+          # Separate module changes from live changes (all_changed_files is space-separated)
           echo "=== DEBUG: Filtering for module changes ==="
-          module_changes=$(echo "$CHANGED_FILES" | jq -r '.[]' | grep "infra/terraform/modules/" || true)
+          module_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/modules/" || true)
           echo "Module changes result: '$module_changes'"
           echo "==========================="
 
           echo "=== DEBUG: Filtering for live changes ==="
-          live_changes=$(echo "$CHANGED_FILES" | jq -r '.[]' | grep "infra/terraform/live/" || echo "")
+          live_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/live/" || echo "")
           echo "Live changes result: '$live_changes'"
           echo "==========================="
           
