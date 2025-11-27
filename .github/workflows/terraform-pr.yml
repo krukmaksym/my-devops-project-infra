@@ -53,10 +53,12 @@ jobs:
         uses: tj-actions/changed-files@v41
         with:
           files: |
-            infra/terraform/modules/**/*.tf 
+            infra/terraform/modules/**/*.tf
             infra/terraform/live/**/*.tf
             infra/terraform/live/**/*.hcl
           json: true
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          sha: ${{ github.event.pull_request.head.sha }}
 
       - name: Set matrix for changed modules
         id: set-matrix
