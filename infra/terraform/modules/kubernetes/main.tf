@@ -39,10 +39,6 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
       effect = "NoSchedule"
     }
   }
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 # Dedicated node pool for monitoring stack (Prometheus, Grafana, Alertmanager, etc.)
@@ -72,8 +68,4 @@ resource "digitalocean_kubernetes_node_pool" "monitoring" {
   }
 
   tags = var.tags
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }

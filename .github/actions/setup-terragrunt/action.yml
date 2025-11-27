@@ -1,0 +1,37 @@
+name: 'Setup Terragrunt Environment'
+description: 'Install Terraform, Terragrunt, and Doppler CLI'
+
+inputs:
+  terraform-version:
+    description: 'Terraform version'
+    required: false
+    default: '1.14.0'
+  terragrunt-version:
+    description: 'Terragrunt version'
+    required: false
+    default: '0.93.11'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+        terraform_wrapper: false
+
+    - name: Install Terragrunt
+      shell: bash
+      run: |
+        echo "📦 Installing Terragrunt ${{ inputs.terragrunt-version }}..."
+        wget -q https://github.com/gruntwork-io/terragrunt/releases/download/v${{ inputs.terragrunt-version }}/terragrunt_linux_amd64
+        chmod +x terragrunt_linux_amd64
+        sudo mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
+        terragrunt --version
+
+    - name: Install Doppler CLI
+      shell: bash
+      run: |
+        echo "🔐 Installing Doppler CLI..."
+        curl -Ls https://cli.doppler.com/install.sh | sh
+        doppler --version
