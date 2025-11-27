@@ -63,10 +63,12 @@ jobs:
         run: |
           changed_files='${{ steps.changed-files.outputs.all_changed_files }}'
           
-          echo "Changed files: $changed_files"
+          echo "=== DEBUG: Changed files ==="
+          echo "$changed_files"
+          echo "==========================="
           
           if [ -z "$changed_files" ] || [ "$changed_files" == "[]" ] || [ "$changed_files" == "" ]; then
-            echo "No terraform files changed"
+            echo "❌ No terraform files changed"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
             exit 0
@@ -75,34 +77,46 @@ jobs:
           echo "has_changes=true" >> $GITHUB_OUTPUT
           
           # Separate module changes from live changes
-          module_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/modules/" || echo "")
+          echo "=== DEBUG: Filtering for module changes ==="
+          module_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/modules/" || true)
+          echo "Module changes result: '$module_changes'"
+          echo "==========================="
+          
+          echo "=== DEBUG: Filtering for live changes ==="
           live_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/live/" || echo "")
+          echo "Live changes result: '$live_changes'"
+          echo "==========================="
           
           matrix_items=""
           
           # Handle module changes - plan ALL environments for changed modules
           if [ -n "$module_changes" ]; then
-            echo "📦 Module changes detected:"
+            echo "📦 Module changes detected!"
             echo "$module_changes"
             
             # Extract which modules changed (network, kubernetes)
+            echo "=== DEBUG: Extracting module names ==="
             changed_modules=$(echo "$module_changes" | \
               sed -E 's|infra/terraform/modules/([^/]+)/.*|\1|' | \
               sort -u)
-            
-            echo "Changed modules: $changed_modules"
+            echo "Changed modules: '$changed_modules'"
+            echo "==========================="
             
             # For each changed module, add all environments
             for module in $changed_modules; do
+              echo "Adding module: $module to all environments"
               for env in dev stage prod; do
                 matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
+                echo "  Added: ${env}/${module}"
               done
             done
+          else
+            echo "⚠️ No module changes detected"
           fi
           
           # Handle live changes - plan only specific env/module
           if [ -n "$live_changes" ]; then
-            echo "🔧 Live changes detected:"
+            echo "🔧 Live changes detected!"
             echo "$live_changes"
             
             live_modules=$(echo "$live_changes" | \
@@ -110,7 +124,7 @@ jobs:
               sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
               sort -u)
             
-            echo "Live modules: $live_modules"
+            echo "Live modules: '$live_modules'"
             
             # Add to matrix
             while IFS= read -r item; do
@@ -118,26 +132,35 @@ jobs:
                 env=$(echo "$item" | awk '{print $1}')
                 module=$(echo "$item" | awk '{print $2}')
                 matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
+                echo "  Added: ${env}/${module}"
               fi
             done <<< "$live_modules"
+          else
+            echo "⚠️ No live changes detected"
           fi
+          
+          echo "=== DEBUG: Matrix items before cleanup ==="
+          echo "Matrix items: '$matrix_items'"
+          echo "==========================="
           
           # Remove trailing comma
           matrix_items="${matrix_items%,}"
           
           if [ -z "$matrix_items" ]; then
-            echo "No valid changes detected"
+            echo "❌ No valid changes detected after parsing"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # Remove duplicates and create final matrix
+          echo "=== DEBUG: Creating final JSON ==="
           matrix_json=$(echo "{\"include\":[${matrix_items}]}" | \
-            jq '.include | unique | {include: .}')
-          
-          echo "Final Matrix JSON: $matrix_json"
-          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+            jq -c '.include | unique | {include: .}')
+
+          echo "✅ Final Matrix JSON: $matrix_json"
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$matrix_json" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
   terraform-format:
     name: Terraform Format Check
