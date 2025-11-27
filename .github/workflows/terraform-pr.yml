@@ -62,30 +62,30 @@ jobs:
 
       - name: Set matrix for changed modules
         id: set-matrix
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          changed_files='${{ steps.changed-files.outputs.all_changed_files }}'
-          
           echo "=== DEBUG: Changed files ==="
-          echo "$changed_files"
+          echo "$CHANGED_FILES"
           echo "==========================="
-          
-          if [ -z "$changed_files" ] || [ "$changed_files" == "[]" ] || [ "$changed_files" == "" ]; then
+
+          if [ -z "$CHANGED_FILES" ] || [ "$CHANGED_FILES" == "[]" ] || [ "$CHANGED_FILES" == "" ]; then
             echo "❌ No terraform files changed"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
+
           echo "has_changes=true" >> $GITHUB_OUTPUT
-          
+
           # Separate module changes from live changes
           echo "=== DEBUG: Filtering for module changes ==="
-          module_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/modules/" || true)
+          module_changes=$(echo "$CHANGED_FILES" | jq -r '.[]' | grep "infra/terraform/modules/" || true)
           echo "Module changes result: '$module_changes'"
           echo "==========================="
-          
+
           echo "=== DEBUG: Filtering for live changes ==="
-          live_changes=$(echo "$changed_files" | jq -r '.[]' | grep "infra/terraform/live/" || echo "")
+          live_changes=$(echo "$CHANGED_FILES" | jq -r '.[]' | grep "infra/terraform/live/" || echo "")
           echo "Live changes result: '$live_changes'"
           echo "==========================="
           
