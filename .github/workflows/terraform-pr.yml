@@ -1,5 +1,6 @@
 name: Terraform PR Validation
 
+# Trigger on PRs to main that modify terraform files or this workflow
 on:
   pull_request:
     branches: [main]
@@ -7,15 +8,17 @@ on:
       - 'infra/terraform/**'
       - '.github/workflows/terraform-pr.yml'
 
+# Read repo content, write PR comments
 permissions:
   contents: read
   pull-requests: write
 
 env:
   TERRAFORM_VERSION: '1.14.0'
-  TERRAGRUNT_VERSION: '0.55.1'
+  TERRAGRUNT_VERSION: '0.93.11'
 
 jobs:
+  # Security check: Only run for PRs from the main repo (not forks)
   security-gate:
     name: Security Gate
     runs-on: ubuntu-latest
@@ -34,6 +37,8 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
 
+  # Detect which terraform modules/environments changed and build a matrix for parallel jobs
+  # Logic: Module changes -> plan ALL envs (dev/stage/prod), Live changes -> plan only specific env
   detect-changes:
     name: Detect Changed Modules
     runs-on: ubuntu-latest
@@ -46,8 +51,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Full history needed for PR diff
 
+      # Detect changed .tf and .hcl files in modules and live directories
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v41
@@ -59,15 +65,12 @@ jobs:
           base_sha: ${{ github.event.pull_request.base.sha }}
           sha: ${{ github.event.pull_request.head.sha }}
 
+      # Parse changed files and build a JSON matrix of {env, module} combinations
       - name: Set matrix for changed modules
         id: set-matrix
         run: |
-          # Use newline-separated output instead of JSON
+          # Get space-separated list of changed files
           changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
-
-          echo "=== DEBUG: Changed files raw ==="
-          echo "$changed_files"
-          echo "==========================="
 
           if [ -z "$changed_files" ]; then
             echo "❌ No terraform files changed"
@@ -78,92 +81,72 @@ jobs:
 
           echo "has_changes=true" >> $GITHUB_OUTPUT
 
-          # Separate module changes from live changes (all_changed_files is space-separated)
-          echo "=== DEBUG: Filtering for module changes ==="
+          # Convert space-separated to newline-separated and filter by path
           module_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/modules/" || true)
-          echo "Module changes result: '$module_changes'"
-          echo "==========================="
-
-          echo "=== DEBUG: Filtering for live changes ==="
           live_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/live/" || echo "")
-          echo "Live changes result: '$live_changes'"
-          echo "==========================="
-          
+
           matrix_items=""
-          
-          # Handle module changes - plan ALL environments for changed modules
+
+          # If module changed (e.g., modules/network/main.tf), plan ALL environments
+          # This ensures shared module changes are validated across dev, stage, prod
           if [ -n "$module_changes" ]; then
-            echo "📦 Module changes detected!"
-            echo "$module_changes"
-            
-            # Extract which modules changed (network, kubernetes)
-            echo "=== DEBUG: Extracting module names ==="
+            echo "📦 Module changes detected: $module_changes"
+
+            # Extract module names (network, kubernetes, etc.)
             changed_modules=$(echo "$module_changes" | \
               sed -E 's|infra/terraform/modules/([^/]+)/.*|\1|' | \
               sort -u)
-            echo "Changed modules: '$changed_modules'"
-            echo "==========================="
-            
-            # For each changed module, add all environments
+
+            # For each changed module, add all environments to the matrix
             for module in $changed_modules; do
-              echo "Adding module: $module to all environments"
+              echo "  Planning all environments for module: $module"
               for env in dev stage prod; do
                 matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
-                echo "  Added: ${env}/${module}"
               done
             done
-          else
-            echo "⚠️ No module changes detected"
           fi
-          
-          # Handle live changes - plan only specific env/module
+
+          # If live config changed (e.g., live/dev/network/terragrunt.hcl), plan only that specific env
           if [ -n "$live_changes" ]; then
-            echo "🔧 Live changes detected!"
-            echo "$live_changes"
-            
+            echo "🔧 Live changes detected: $live_changes"
+
+            # Extract env and module from path: live/dev/network/... -> "dev network"
             live_modules=$(echo "$live_changes" | \
               grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes)" | \
               sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
               sort -u)
-            
-            echo "Live modules: '$live_modules'"
-            
+
             # Add to matrix
             while IFS= read -r item; do
               if [ -n "$item" ]; then
                 env=$(echo "$item" | awk '{print $1}')
                 module=$(echo "$item" | awk '{print $2}')
                 matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
-                echo "  Added: ${env}/${module}"
+                echo "  Planning for: ${env}/${module}"
               fi
             done <<< "$live_modules"
-          else
-            echo "⚠️ No live changes detected"
           fi
-          
-          echo "=== DEBUG: Matrix items before cleanup ==="
-          echo "Matrix items: '$matrix_items'"
-          echo "==========================="
-          
-          # Remove trailing comma
+
+          # Remove trailing comma and deduplicate with jq
           matrix_items="${matrix_items%,}"
-          
+
           if [ -z "$matrix_items" ]; then
             echo "❌ No valid changes detected after parsing"
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
-          echo "=== DEBUG: Creating final JSON ==="
+
+          # Build final JSON matrix: {"include":[{"env":"dev","module":"network"},...]}
           matrix_json=$(echo "{\"include\":[${matrix_items}]}" | \
             jq -c '.include | unique | {include: .}')
 
-          echo "✅ Final Matrix JSON: $matrix_json"
+          echo "✅ Matrix: $matrix_json"
           echo "matrix<<EOF" >> $GITHUB_OUTPUT
           echo "$matrix_json" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+  # Check terraform code formatting (runs on all PRs, even if no changes detected)
   terraform-format:
     name: Terraform Format Check
     runs-on: ubuntu-latest
@@ -184,6 +167,8 @@ jobs:
           cd infra/terraform
           terraform fmt -check -recursive -diff
 
+  # Run terragrunt validate for each env/module combination (runs in parallel via matrix)
+  # Note: Must run init before validate, as Terraform needs initialized providers
   terragrunt-validate:
     name: Validate (${{ matrix.env }}/${{ matrix.module }})
     runs-on: ubuntu-latest
@@ -191,46 +176,19 @@ jobs:
     if: needs.security-gate.outputs.should_run == 'true' && needs.detect-changes.outputs.has_changes == 'true'
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-      fail-fast: false
+      fail-fast: false  # Continue validating other envs even if one fails
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # USE COMPOSITE ACTION HERE
+      # Install Terraform, Terragrunt, and Doppler CLI
       - name: Setup Terragrunt Environment
         uses: ./.github/actions/setup-terragrunt
         with:
           terraform-version: ${{ env.TERRAFORM_VERSION }}
           terragrunt-version: ${{ env.TERRAGRUNT_VERSION }}
 
-      # USE COMPOSITE ACTION HERE
-      - name: Terragrunt Validate
-        uses: ./.github/actions/terragrunt-exec
-        with:
-          working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
-          command: validate
-          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
-
-  terragrunt-plan:
-    name: Plan (${{ matrix.env }}/${{ matrix.module }})
-    runs-on: ubuntu-latest
-    needs: [security-gate, detect-changes, terraform-format, terragrunt-validate]
-    if: needs.security-gate.outputs.should_run == 'true' && needs.detect-changes.outputs.has_changes == 'true'
-    strategy:
-      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
-      fail-fast: false
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # USE COMPOSITE ACTION HERE
-      - name: Setup Terragrunt Environment
-        uses: ./.github/actions/setup-terragrunt
-        with:
-          terraform-version: ${{ env.TERRAFORM_VERSION }}
-          terragrunt-version: ${{ env.TERRAGRUNT_VERSION }}
-
-      # USE COMPOSITE ACTION HERE  
+      # Initialize Terraform providers and backend
       - name: Terragrunt Init
         uses: ./.github/actions/terragrunt-exec
         with:
@@ -238,6 +196,44 @@ jobs:
           command: init
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
 
+      # Validate Terraform configuration syntax and logic
+      - name: Terragrunt Validate
+        uses: ./.github/actions/terragrunt-exec
+        with:
+          working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
+          command: validate
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+
+  # Generate Terraform plan for each env/module combination (runs in parallel via matrix)
+  # Plans show what changes will be made without actually applying them
+  terragrunt-plan:
+    name: Plan (${{ matrix.env }}/${{ matrix.module }})
+    runs-on: ubuntu-latest
+    needs: [security-gate, detect-changes, terraform-format, terragrunt-validate]
+    if: needs.security-gate.outputs.should_run == 'true' && needs.detect-changes.outputs.has_changes == 'true'
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false  # Continue planning other envs even if one fails
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Install Terraform, Terragrunt, and Doppler CLI
+      - name: Setup Terragrunt Environment
+        uses: ./.github/actions/setup-terragrunt
+        with:
+          terraform-version: ${{ env.TERRAFORM_VERSION }}
+          terragrunt-version: ${{ env.TERRAGRUNT_VERSION }}
+
+      # Initialize Terraform providers and backend
+      - name: Terragrunt Init
+        uses: ./.github/actions/terragrunt-exec
+        with:
+          working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
+          command: init
+          doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+
+      # Generate execution plan showing what changes Terraform will make
       - name: Terragrunt Plan
         id: plan
         uses: ./.github/actions/terragrunt-exec
@@ -247,20 +243,22 @@ jobs:
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
           extra-args: -no-color -out=tfplan
 
+      # Extract summary from plan output for PR comment
       - name: Extract Plan Summary
         id: summary
         run: |
           plan_output='${{ steps.plan.outputs.output }}'
           plan_summary=$(echo "$plan_output" | grep -E "Plan:|No changes" | tail -1 || echo "Plan completed")
-          
+
           echo "PLAN_SUMMARY<<EOF" >> $GITHUB_OUTPUT
           echo "$plan_summary" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          
+
           echo "PLAN_OUTPUT<<EOF" >> $GITHUB_OUTPUT
           echo "$plan_output" | tail -100 >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      # Post plan results as a PR comment for easy review
       - name: Comment PR with Plan
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
@@ -271,19 +269,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const output = `#### Terraform Plan 📋 \`${{ matrix.env }}/${{ matrix.module }}\`
-            
+
             **Summary:** ${process.env.PLAN_SUMMARY}
-            
+
             <details><summary>Show Plan Details</summary>
-            
+
             \`\`\`terraform
             ${process.env.PLAN_OUTPUT}
             \`\`\`
-            
+
             </details>
-            
+
             *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -291,27 +289,32 @@ jobs:
               body: output
             });
 
+  # Summary job that aggregates results from all previous jobs
+  # This job always runs and reports overall workflow status
   plan-summary:
     name: Plan Summary
     runs-on: ubuntu-latest
     needs: [terraform-format, terragrunt-validate, terragrunt-plan]
-    if: always()
+    if: always()  # Run even if previous jobs fail
     steps:
       - name: Check Results
         run: |
           echo "## Plan Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
+          # Check formatting
           if [ "${{ needs.terraform-format.result }}" != "success" ]; then
             echo "❌ Terraform format check failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-          
+
+          # Check validation
           if [ "${{ needs.terragrunt-validate.result }}" == "failure" ]; then
             echo "❌ Terragrunt validation failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
-          
+
+          # Check planning
           if [ "${{ needs.terragrunt-plan.result }}" == "failure" ]; then
             echo "❌ Terragrunt plan failed" >> $GITHUB_STEP_SUMMARY
             exit 1

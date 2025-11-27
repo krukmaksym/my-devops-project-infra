@@ -1,24 +1,26 @@
+# Composite action to execute Terragrunt commands with Doppler for secrets injection
+# Captures output for use in subsequent steps and properly propagates exit codes
 name: 'Execute Terragrunt Command'
 description: 'Run Terragrunt commands with Doppler'
 
 inputs:
   working-directory:
-    description: 'Working directory'
+    description: 'Working directory (e.g., infra/terraform/live/dev/network)'
     required: true
   command:
     description: 'Terragrunt command to run (init, validate, plan, apply)'
     required: true
   doppler-token:
-    description: 'Doppler token'
+    description: 'Doppler token for accessing secrets'
     required: true
   extra-args:
-    description: 'Extra arguments for the command'
+    description: 'Extra arguments for the command (e.g., -no-color -out=tfplan)'
     required: false
     default: ''
 
 outputs:
   output:
-    description: 'Command output'
+    description: 'Command output (stdout and stderr combined)'
     value: ${{ steps.exec.outputs.output }}
 
 runs:
@@ -32,13 +34,21 @@ runs:
         DOPPLER_TOKEN: ${{ inputs.doppler-token }}
       run: |
         echo "🚀 Running: terragrunt ${{ inputs.command }} ${{ inputs.extra-args }}"
-        
+
+        # Disable exit-on-error to capture output even if command fails
+        set +e
         output=$(doppler run --name-transformer tf-var -- \
           terragrunt ${{ inputs.command }} ${{ inputs.extra-args }} 2>&1)
-        
+        exit_code=$?
+        set -e
+
+        # Display output to workflow logs
         echo "$output"
-        
-        # Save output for use in other steps
+
+        # Save output as multiline string for use in other steps
         echo "output<<EOF" >> $GITHUB_OUTPUT
         echo "$output" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
+
+        # Propagate the original exit code to fail the workflow step if terragrunt failed
+        exit $exit_code

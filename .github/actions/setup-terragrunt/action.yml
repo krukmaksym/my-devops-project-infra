@@ -1,3 +1,5 @@
+# Composite action to set up the complete Terragrunt environment
+# Installs: Terraform, Terragrunt, and Doppler CLI (for secrets management)
 name: 'Setup Terragrunt Environment'
 description: 'Install Terraform, Terragrunt, and Doppler CLI'
 
@@ -14,12 +16,14 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    # Install Terraform using official HashiCorp action
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: ${{ inputs.terraform-version }}
-        terraform_wrapper: false
+        terraform_wrapper: false  # Disable wrapper to get raw terraform output
 
+    # Download and install Terragrunt binary
     - name: Install Terragrunt
       shell: bash
       run: |
@@ -29,9 +33,11 @@ runs:
         sudo mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
         terragrunt --version
 
+    # Install Doppler CLI for secrets/environment variable management
+    # Using sudo to allow system-wide installation with proper permissions
     - name: Install Doppler CLI
       shell: bash
       run: |
         echo "🔐 Installing Doppler CLI..."
-        curl -Ls https://cli.doppler.com/install.sh | sh
+        curl -Ls https://cli.doppler.com/install.sh | sudo sh
         doppler --version
