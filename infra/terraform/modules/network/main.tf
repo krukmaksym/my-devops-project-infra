@@ -3,7 +3,7 @@ resource "digitalocean_vpc" "vpc" {
   region   = var.region
   ip_range = var.vpc_cidr
 
-  lifecycle {
-    prevent_destroy = true
-  }
+  # lifecycle {
+  #   prevent_destroy = true
+  # }
 }
