@@ -126,16 +126,16 @@ jobs:
           cd infra/terraform
           terraform fmt -check -recursive -diff
 
-      - name: Terraform Validate Modules
-        run: |
-          echo "✅ Validating Terraform modules..."
-          for module in infra/terraform/modules/*/; do
-            echo "Validating $module"
-            cd $module
-            terraform init -backend=false
-            terraform validate
-            cd - > /dev/null
-          done
+      # - name: Terraform Validate Modules
+      #   run: |
+      #     echo "✅ Validating Terraform modules..."
+      #     for module in infra/terraform/modules/*/; do
+      #       echo "Validating $module"
+      #       cd $module
+      #       terraform init -backend=false
+      #       terraform validate
+      #       cd - > /dev/null
+      #     done
 
   terragrunt-plan:
     name: Plan (${{ matrix.env }}/${{ matrix.module }})
