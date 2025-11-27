@@ -74,6 +74,6 @@ resource "digitalocean_kubernetes_node_pool" "monitoring" {
   tags = var.tags
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
