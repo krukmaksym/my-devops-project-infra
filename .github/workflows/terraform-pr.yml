@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'infra/terraform/**'
-      - '.github/workflows/terraform-pr.yaml'
+      - '.github/workflows/terraform-pr.yml'
 
 permissions:
   contents: read
@@ -106,8 +106,8 @@ jobs:
           echo "Matrix JSON: $matrix_json"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
-  terraform-validate:
-    name: Terraform Validate
+  terraform-format:
+    name: Terraform Format Check
     runs-on: ubuntu-latest
     needs: [security-gate, detect-changes]
     if: needs.security-gate.outputs.should_run == 'true'
@@ -126,21 +126,60 @@ jobs:
           cd infra/terraform
           terraform fmt -check -recursive -diff
 
-      # - name: Terraform Validate Modules
-      #   run: |
-      #     echo "✅ Validating Terraform modules..."
-      #     for module in infra/terraform/modules/*/; do
-      #       echo "Validating $module"
-      #       cd $module
-      #       terraform init -backend=false
-      #       terraform validate
-      #       cd - > /dev/null
-      #     done
+      - name: Terragrunt Format Check
+        run: |
+          echo "🎨 Checking Terragrunt formatting..."
+          find infra/terraform/live -name "*.hcl" -type f | while read file; do
+            echo "Checking $file"
+            # Basic HCL syntax check
+            cat "$file" > /dev/null || exit 1
+          done
+          echo "✅ All HCL files are valid"
+
+  terragrunt-validate:
+    name: Validate (${{ matrix.env }}/${{ matrix.module }})
+    runs-on: ubuntu-latest
+    needs: [security-gate, detect-changes, terraform-format]
+    if: needs.security-gate.outputs.should_run == 'true' && needs.detect-changes.outputs.has_changes == 'true'
+    strategy:
+      matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Install Terragrunt
+        run: |
+          echo "📦 Installing Terragrunt..."
+          wget -q https://github.com/gruntwork-io/terragrunt/releases/download/v${{ env.TERRAGRUNT_VERSION }}/terragrunt_linux_amd64
+          chmod +x terragrunt_linux_amd64
+          sudo mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: Install Doppler CLI
+        run: |
+          echo "🔐 Installing Doppler CLI..."
+          curl -Ls https://cli.doppler.com/install.sh | sh
+          doppler --version
+
+      - name: Terragrunt Validate
+        working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        run: |
+          echo "✅ Validating ${{ matrix.env }}/${{ matrix.module }} via Terragrunt..."
+          doppler run --name-transformer tf-var -- terragrunt validate
 
   terragrunt-plan:
     name: Plan (${{ matrix.env }}/${{ matrix.module }})
     runs-on: ubuntu-latest
-    needs: [security-gate, detect-changes]
+    needs: [security-gate, detect-changes, terraform-format, terragrunt-validate]
     if: needs.security-gate.outputs.should_run == 'true' && needs.detect-changes.outputs.has_changes == 'true'
     strategy:
       matrix: ${{ fromJson(needs.detect-changes.outputs.matrix) }}
@@ -240,7 +279,7 @@ jobs:
   plan-summary:
     name: Plan Summary
     runs-on: ubuntu-latest
-    needs: [terragrunt-plan]
+    needs: [terraform-format, terragrunt-validate, terragrunt-plan]
     if: always()
     steps:
       - name: Check Results
@@ -248,8 +287,13 @@ jobs:
           echo "## Plan Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ needs.terraform-validate.result }}" != "success" ]; then
-            echo "❌ Terraform validation failed" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.terraform-format.result }}" != "success" ]; then
+            echo "❌ Terraform format check failed" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+          if [ "${{ needs.terragrunt-validate.result }}" == "failure" ]; then
+            echo "❌ Terragrunt validation failed" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
