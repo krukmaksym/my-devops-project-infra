@@ -195,6 +195,7 @@ jobs:
           working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
           command: init
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          tf-cloud-token: ${{ secrets.TF_CLOUD_TOKEN }}
 
       # Validate Terraform configuration syntax and logic
       - name: Terragrunt Validate
@@ -203,6 +204,7 @@ jobs:
           working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
           command: validate
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          tf-cloud-token: ${{ secrets.TF_CLOUD_TOKEN }}
 
   # Generate Terraform plan for each env/module combination (runs in parallel via matrix)
   # Plans show what changes will be made without actually applying them
@@ -232,6 +234,7 @@ jobs:
           working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
           command: init
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          tf-cloud-token: ${{ secrets.TF_CLOUD_TOKEN }}
 
       # Generate execution plan showing what changes Terraform will make
       - name: Terragrunt Plan
@@ -241,6 +244,7 @@ jobs:
           working-directory: infra/terraform/live/${{ matrix.env }}/${{ matrix.module }}
           command: plan
           doppler-token: ${{ secrets.DOPPLER_TOKEN }}
+          tf-cloud-token: ${{ secrets.TF_CLOUD_TOKEN }}
           extra-args: -no-color -out=tfplan
 
       # Extract summary from plan output for PR comment

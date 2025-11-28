@@ -13,6 +13,9 @@ inputs:
   doppler-token:
     description: 'Doppler token for accessing secrets'
     required: true
+  tf-cloud-token:
+    description: 'Terraform Cloud/HCP Terraform API token'
+    required: true
   extra-args:
     description: 'Extra arguments for the command (e.g., -no-color -out=tfplan)'
     required: false
@@ -32,15 +35,15 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         DOPPLER_TOKEN: ${{ inputs.doppler-token }}
+        TF_TOKEN_app_terraform_io: ${{ inputs.tf-cloud-token }}
       run: |
         echo "🚀 Running: terragrunt ${{ inputs.command }} ${{ inputs.extra-args }}"
 
         # Disable exit-on-error to capture output even if command fails
         set +e
-        # Using 'tf-var' transformer to convert Doppler secrets to Terraform format:
-        # - Secrets starting with TF_ pass through unchanged (e.g., TF_TOKEN_APP_TERRAFORM_IO)
-        # - Other secrets get TF_VAR_ prefix (e.g., DO_TOKEN -> TF_VAR_DO_TOKEN)
-        # All secrets are lowercased after the prefix (e.g., TF_VAR_DO_TOKEN -> TF_VAR_do_token)
+        # Using 'tf-var' transformer to convert Doppler secrets to Terraform input variables
+        # TF Cloud token is passed directly via environment variable above to avoid transformation
+        # Doppler secrets (DO_TOKEN, etc.) get transformed to TF_VAR_do_token
         output=$(doppler run --name-transformer tf-var -- \
           terragrunt ${{ inputs.command }} ${{ inputs.extra-args }} 2>&1)
         exit_code=$?
