@@ -37,7 +37,9 @@ runs:
 
         # Disable exit-on-error to capture output even if command fails
         set +e
-        output=$(doppler run --name-transformer tf-var -- \
+        # Note: Not using --name-transformer to avoid transforming TF_TOKEN_* secrets
+        # Doppler secrets should be named exactly as Terraform expects them (e.g., TF_TOKEN_app_terraform_io)
+        output=$(doppler run -- \
           terragrunt ${{ inputs.command }} ${{ inputs.extra-args }} 2>&1)
         exit_code=$?
         set -e
