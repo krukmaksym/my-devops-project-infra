@@ -13,9 +13,6 @@ inputs:
   doppler-token:
     description: 'Doppler token for accessing secrets'
     required: true
-  tf-cloud-token:
-    description: 'Terraform Cloud/HCP Terraform API token'
-    required: true
   extra-args:
     description: 'Extra arguments for the command (e.g., -no-color -out=tfplan)'
     required: false
@@ -35,7 +32,6 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       env:
         DOPPLER_TOKEN: ${{ inputs.doppler-token }}
-        TF_TOKEN_app_terraform_io: ${{ inputs.tf-cloud-token }}
       run: |
         echo "🚀 Running: terragrunt ${{ inputs.command }} ${{ inputs.extra-args }}"
 
