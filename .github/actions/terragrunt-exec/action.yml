@@ -37,9 +37,11 @@ runs:
 
         # Disable exit-on-error to capture output even if command fails
         set +e
-        # Note: Not using --name-transformer to avoid transforming TF_TOKEN_* secrets
-        # Doppler secrets should be named exactly as Terraform expects them (e.g., TF_TOKEN_app_terraform_io)
-        output=$(doppler run -- \
+        # Using 'tf-var' transformer to convert Doppler secrets to Terraform format:
+        # - Secrets starting with TF_ pass through unchanged (e.g., TF_TOKEN_APP_TERRAFORM_IO)
+        # - Other secrets get TF_VAR_ prefix (e.g., DO_TOKEN -> TF_VAR_DO_TOKEN)
+        # All secrets are lowercased after the prefix (e.g., TF_VAR_DO_TOKEN -> TF_VAR_do_token)
+        output=$(doppler run --name-transformer tf-var -- \
           terragrunt ${{ inputs.command }} ${{ inputs.extra-args }} 2>&1)
         exit_code=$?
         set -e
