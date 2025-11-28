@@ -83,20 +83,20 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 ## Technology Stack
 
 ### Infrastructure & Platform
-- **IaC**: Terraform 1.14.0 + Terragrunt (DRY configuration)
+- **IaC**: Terraform 1.14.0 + Terragrunt 0.93.11 (DRY configuration)
 - **Cloud Provider**: DigitalOcean
 - **Container Orchestration**: Kubernetes (DOKS) 1.34.0
 - **State Management**: Terraform Cloud
 - **Secrets Management**: Doppler
 
 ### DevOps Tools (Current)
+- **CI/CD**: GitHub Actions (automated PR validation)
 - **Pre-commit Hooks**: terraform-fmt, terragrunt-fmt
 - **Version Control**: Git
 
 ### Planned Stack
 - **GitOps**: ArgoCD + Argo Rollouts
 - **Observability**: Prometheus, Grafana, Loki, Tempo
-- **CI/CD**: GitHub Actions
 - **Security**: Trivy, Checkov, tfsec, OPA Gatekeeper
 - **Service Mesh**: Istio/Linkerd (future)
 - **Backup**: Velero
@@ -107,6 +107,12 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 
 ```
 my-devops-project-infra/
+├── .github/
+│   ├── actions/                  # Reusable composite actions
+│   │   ├── setup-terragrunt/     # Install Terraform, Terragrunt, Doppler
+│   │   └── terragrunt-exec/      # Execute Terragrunt with Doppler secrets
+│   └── workflows/
+│       └── terraform-pr.yml      # PR validation workflow
 ├── .pre-commit-config.yaml      # Pre-commit hooks configuration
 ├── Makefile                     # Automation shortcuts for Terragrunt
 ├── README.md                    # This file
@@ -166,15 +172,22 @@ doppler --version
    ```bash
    doppler login
    doppler setup
-   # Add required secrets:
-   # - TF_VAR_do_token (DigitalOcean API token)
+   # Add required secrets (uppercase in Doppler UI):
+   # - DO_TOKEN (DigitalOcean API token - will become TF_VAR_do_token)
    ```
 
 4. **Configure Terraform Cloud**
    - Create organization: `my-devops-project`
    - Workspaces will be auto-created by Terragrunt
 
-5. **Initialize and plan infrastructure**
+5. **Configure GitHub Secrets** (for CI/CD)
+   ```bash
+   # Repository secrets (Settings > Secrets and variables > Actions):
+   # - DOPPLER_TOKEN: Your Doppler service token
+   # - TF_CLOUD_TOKEN: Your Terraform Cloud API token
+   ```
+
+6. **Initialize and plan infrastructure**
    ```bash
    # Plan for dev environment
    make plan-dev
@@ -201,6 +214,7 @@ doppler --version
 | **Tagging strategy** | ✅ Complete | Consistent tagging across resources |
 | **Auto-scaling** | ✅ Complete | Node pool auto-scaling configured |
 | **Lifecycle protection** | ✅ Complete | prevent_destroy on critical resources |
+| **CI/CD Pipeline** | ✅ Complete | GitHub Actions PR validation workflow |
 
 ### 🚧 In Progress / Planned
 
@@ -209,13 +223,54 @@ doppler --version
 | **Enhanced pre-commit hooks** | High | 🚧 Planned | Week 1 |
 | **Monitoring module** | High | 🚧 Planned | Week 2-3 |
 | **Module documentation** | High | 🚧 Planned | Week 1 |
-| **CI/CD pipeline** | High | 🚧 Planned | Week 2-3 |
 | **ArgoCD setup** | Medium | 📋 Planned | Week 4-5 |
 | **GitOps workflow** | Medium | 📋 Planned | Week 5-6 |
 | **Observability dashboards** | Medium | 📋 Planned | Week 6-7 |
 | **Security scanning** | High | 📋 Planned | Week 3-4 |
 | **Disaster recovery** | High | 📋 Planned | Week 8-9 |
 | **Cost optimization** | Medium | 📋 Planned | Week 10+ |
+
+---
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+The project includes an automated PR validation workflow ([`.github/workflows/terraform-pr.yml`](.github/workflows/terraform-pr.yml)) that runs on every pull request to `main`.
+
+#### Workflow Features
+
+1. **Security Gate**: Prevents workflow execution for forked PRs to protect secrets
+2. **Smart Change Detection**: Identifies modified Terraform files and builds a matrix of affected environments
+3. **Terraform Format Check**: Validates code formatting across all Terraform files
+4. **Parallel Validation**: Runs `terragrunt validate` in parallel for all affected env/module combinations
+5. **Parallel Planning**: Generates Terraform plans for all changes and posts summaries as PR comments
+6. **Summary Report**: Aggregates results from all jobs and provides overall workflow status
+
+#### Change Detection Logic
+
+- **Module changes** (e.g., `modules/network/main.tf`): Plans ALL environments (dev, stage, prod)
+- **Live changes** (e.g., `live/dev/network/terragrunt.hcl`): Plans only the specific environment
+
+#### Composite Actions
+
+**[setup-terragrunt](.github/actions/setup-terragrunt/action.yml)**
+- Installs Terraform 1.14.0
+- Installs Terragrunt 0.93.11
+- Installs Doppler CLI
+
+**[terragrunt-exec](.github/actions/terragrunt-exec/action.yml)**
+- Executes Terragrunt commands with Doppler secrets injection
+- Handles exit codes properly for workflow failure detection
+- Captures output for PR comments
+- Uses `tf-var` name transformer for Terraform variables
+- TF Cloud token passed directly to avoid transformation
+
+#### Secrets Management
+
+The workflow uses a hybrid approach:
+- **Doppler**: Terraform input variables (e.g., `DO_TOKEN` → `TF_VAR_do_token`)
+- **GitHub Secrets**: Terraform Cloud token (`TF_CLOUD_TOKEN` → `TF_TOKEN_app_terraform_io`)
 
 ---
 
@@ -236,12 +291,14 @@ doppler --version
 - [ ] Set up Loki for centralized logging
 - [ ] Create initial alerting rules
 
-#### Week 3-4: CI/CD Pipeline
-- [ ] Create GitHub Actions workflows
-  - [ ] PR validation (terraform validate/plan)
-  - [ ] Security scanning (trivy, checkov, tfsec)
-  - [ ] Cost estimation (Infracost)
-  - [ ] Auto-apply on merge to main
+#### Week 3-4: Enhanced CI/CD Pipeline
+- [x] Create GitHub Actions PR validation workflow
+- [x] Smart change detection and matrix strategy
+- [x] Parallel validate and plan jobs
+- [x] PR comment with plan summaries
+- [ ] Add security scanning (trivy, checkov, tfsec)
+- [ ] Cost estimation (Infracost)
+- [ ] Auto-apply on merge to main
 - [ ] Add pipeline status badges
 - [ ] Configure notifications (Slack/Discord)
 
@@ -530,5 +587,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Status**: 🚧 Active Development
-**Last Updated**: 2025-11-26
-**Version**: 0.2.0 (Foundation Complete)
+**Last Updated**: 2025-11-28
+**Version**: 0.3.0 (CI/CD Pipeline Complete)
