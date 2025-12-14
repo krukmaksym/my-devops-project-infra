@@ -62,3 +62,9 @@ Ensure the `README.md` contains the marker tags:
 <!-- BEGIN_TF_DOCS -->
 <!-- END_TF_DOCS -->
 ```
+
+### Error: `Duplicate required providers configuration`
+**Symptom**: Terragrunt plan fails with `A module may have only one required providers configuration`.
+**Cause**: Both the module (e.g., `versions.tf`) and Terragrunt (generated `provider.tf`) define `required_providers`.
+**Solution**:
+Ensure `root.hcl` does NOT generate a `terraform { required_providers { ... } }` block if modules manage their own versions.
