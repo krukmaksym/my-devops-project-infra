@@ -14,6 +14,13 @@ This guide covers common issues encountered when working with the infrastructure
    terragrunt force-unlock <LOCK_ID>
    ```
 
+### Error: `could not read state version outputs` or `Unknown variable`
+**Symptom**: Terragrunt fails with "resource not found" or "Unknown variable 'dependency'" when running plan.
+**Cause**: The dependency module (e.g., network) hasn't been applied yet, so there are no outputs in the state to read.
+**Solution**:
+1. Apple the dependency module first (Recommended): `cd ../network && terragrunt apply`
+2. Configure `mock_outputs` in the `dependency` block to simulate outputs during plan.
+
 ### Error: `MISSING_DOPPLER_TOKEN` or `401 Unauthorized`
 **Symptom**: Terraform/Terragrunt commands fail immediately.
 **Cause**: Doppler token is missing or expired in the current shell session.
@@ -53,6 +60,16 @@ This guide covers common issues encountered when working with the infrastructure
    pre-commit run terraform_validate -a
    ```
 2. If `versions.tf` is missing in a new module, ensure you add `required_providers`.
+
+### Error: `tflint` warns about unused variables
+**Symptom**: Pre-commit fails with `[Fixable] variable "do_token" is declared but not used`.
+**Cause**: Variables used only for provider authentication are not referenced in resources, triggering TFLint.
+**Solution**:
+Ignore the rule for that specific variable:
+```hcl
+// tflint-ignore: terraform_unused_declarations
+variable "do_token" { ... }
+```
 
 ### Documentation not updating
 **Symptom**: `terraform_docs` hook passes but `README.md` is empty.
