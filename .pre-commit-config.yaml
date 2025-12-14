@@ -5,10 +5,12 @@ repos:
       - id: terraform_fmt
       - id: terragrunt_fmt
       - id: terraform_docs
+        args:
+          - --args=--lockfile=false
       - id: terraform_tflint
-        args: 
-          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
       - id: terraform_tfsec
       - id: terraform_trivy
+      - id: terraform_checkov
+      - id: terraform_validate
       # - id: terrascan
       # - id: yamllint

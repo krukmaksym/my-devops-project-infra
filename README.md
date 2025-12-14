@@ -23,6 +23,12 @@
 
 ---
 
+
+## Documentation
+
+- [Architecture Diagrams](docs/architecture/diagrams.md) - High-level and node-pool specific designs.
+- [Troubleshooting Guide](docs/troubleshooting.md) - Common issues and solutions.
+
 ## Overview
 
 This project serves as a comprehensive demonstration of Senior DevOps and SRE capabilities, implementing industry best practices for infrastructure automation, cloud-native application deployment, and operational excellence.
@@ -114,6 +120,9 @@ my-devops-project-infra/
 │   └── workflows/
 │       └── terraform-pr.yml      # PR validation workflow
 ├── .pre-commit-config.yaml      # Pre-commit hooks configuration
+├── docs/                        # Project documentation
+│   ├── architecture/            # Architecture diagrams
+│   └── troubleshooting.md       # Troubleshooting guide
 ├── Makefile                     # Automation shortcuts for Terragrunt
 ├── README.md                    # This file
 ├── LICENSE                      # MIT License
@@ -210,7 +219,8 @@ doppler --version
 | **Terragrunt DRY config** | ✅ Complete | Centralized configuration, minimal duplication |
 | **Doppler integration** | ✅ Complete | Secure secret management via Makefile |
 | **Remote state** | ✅ Complete | Terraform Cloud backend |
-| **Pre-commit (basic)** | ✅ Complete | terraform_fmt, terragrunt_fmt |
+| **Pre-commit (Enhanced)** | ✅ Complete | terraform_fmt, tflint, tfsec, checkov, docs |
+| **Documentation** | ✅ Complete | Architecture diagrams, Troubleshooting guide, Module docs |
 | **Tagging strategy** | ✅ Complete | Consistent tagging across resources |
 | **Auto-scaling** | ✅ Complete | Node pool auto-scaling configured |
 | **Lifecycle protection** | ✅ Complete | prevent_destroy on critical resources |
@@ -220,9 +230,7 @@ doppler --version
 
 | Component | Priority | Status | Target Completion |
 |-----------|----------|--------|-------------------|
-| **Enhanced pre-commit hooks** | High | 🚧 Planned | Week 1 |
 | **Monitoring module** | High | 🚧 Planned | Week 2-3 |
-| **Module documentation** | High | 🚧 Planned | Week 1 |
 | **ArgoCD setup** | Medium | 📋 Planned | Week 4-5 |
 | **GitOps workflow** | Medium | 📋 Planned | Week 5-6 |
 | **Observability dashboards** | Medium | 📋 Planned | Week 6-7 |
@@ -279,10 +287,10 @@ The workflow uses a hybrid approach:
 ### Phase 1: Foundation & Security (Weeks 1-4)
 
 #### Week 1: Enhanced Pre-commit & Documentation
-- [ ] Enable all pre-commit hooks (terraform_validate, tflint, tfsec, checkov)
-- [ ] Auto-generate module documentation with terraform-docs
-- [ ] Create architecture diagrams
-- [ ] Add troubleshooting guide
+- [x] Enable all pre-commit hooks (terraform_validate, tflint, tfsec, checkov)
+- [x] Auto-generate module documentation with terraform-docs
+- [x] Create architecture diagrams
+- [x] Add troubleshooting guide
 
 #### Week 2-3: Monitoring Stack
 - [ ] Implement monitoring Terraform module
