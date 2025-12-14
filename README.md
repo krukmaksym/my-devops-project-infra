@@ -23,6 +23,12 @@
 
 ---
 
+
+## Documentation
+
+- [Architecture Diagrams](docs/architecture/diagrams.md) - High-level and node-pool specific designs.
+- [Troubleshooting Guide](docs/troubleshooting.md) - Common issues and solutions.
+
 ## Overview
 
 This project serves as a comprehensive demonstration of Senior DevOps and SRE capabilities, implementing industry best practices for infrastructure automation, cloud-native application deployment, and operational excellence.

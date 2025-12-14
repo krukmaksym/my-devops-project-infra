@@ -1,3 +1,4 @@
+// tflint-ignore: terraform_unused_declarations
 variable "do_token" {
   type      = string
   sensitive = true
