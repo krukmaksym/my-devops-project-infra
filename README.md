@@ -102,7 +102,7 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 
 ### Planned Stack
 - **GitOps**: ArgoCD + Argo Rollouts
-- **Observability**: Prometheus, Grafana, Loki, Tempo
+- **Observability**: VictoriaMetrics, Grafana, Loki, Tempo
 - **Security**: Trivy, Checkov, tfsec, OPA Gatekeeper
 - **Service Mesh**: Istio/Linkerd (future)
 - **Backup**: Velero
@@ -230,7 +230,7 @@ doppler --version
 
 | Component | Priority | Status | Target Completion |
 |-----------|----------|--------|-------------------|
-| **Monitoring module** | High | 🚧 Planned | Week 2-3 |
+| **Monitoring module** | High | 🚧 In Progress | Week 2-3 |
 | **ArgoCD setup** | Medium | 📋 Planned | Week 4-5 |
 | **GitOps workflow** | Medium | 📋 Planned | Week 5-6 |
 | **Observability dashboards** | Medium | 📋 Planned | Week 6-7 |
@@ -293,17 +293,19 @@ The workflow uses a hybrid approach:
 - [x] Add troubleshooting guide
 
 #### Week 2-3: Monitoring Stack
-- [ ] Implement monitoring Terraform module
-- [ ] Deploy kube-prometheus-stack via Helm
+- [ ] Implement monitoring Terraform module (VictoriaMetrics)
+- [ ] Deploy victoria-metrics-k8s-stack via Helm
 - [ ] Configure Grafana dashboards
 - [ ] Set up Loki for centralized logging
 - [ ] Create initial alerting rules
 
 #### Week 3-4: Enhanced CI/CD Pipeline
-- [x] Create GitHub Actions PR validation workflow
-- [x] Smart change detection and matrix strategy
-- [x] Parallel validate and plan jobs
-- [x] PR comment with plan summaries
+- [ ] Create GitHub Actions PR validation workflow
+- [ ] Smart change detection and matrix strategy
+- [ ] Parallel validate and plan jobs
+- [ ] PR comment with plan summaries
+- [ ] Create Dev-only deployment pipeline
+- [ ] Create Infrastructure Destroy pipeline
 - [ ] Add security scanning (trivy, checkov, tfsec)
 - [ ] Cost estimation (Infracost)
 - [ ] Auto-apply on merge to main
