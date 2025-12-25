@@ -8,17 +8,6 @@ terraform {
 
 dependency "kubernetes" {
   config_path = "../kubernetes"
-  # Mock outputs allow us to validate and plan even if the Kubernetes cluster
-  # hasn't been instantiated yet (e.g. during CI checks for other envs).
-  mock_outputs = {
-    cluster_id             = "mock-id"
-    endpoint               = "https://mock-endpoint"
-    cluster_token          = "mock-token"
-    cluster_ca_certificate = "bW9jay1jZXJ0" # base64 "mock-cert"
-  }
-
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
-  skip_outputs                            = true
 }
 
 locals {
