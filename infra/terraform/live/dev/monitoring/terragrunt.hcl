@@ -20,7 +20,7 @@ dependency "kubernetes" {
     cluster_ca_certificate = "bW9jay1jZXJ0" # base64 "mock-cert"
   }
 
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
 }
 
 locals {
