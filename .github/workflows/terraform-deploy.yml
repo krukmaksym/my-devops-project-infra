@@ -1,0 +1,87 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infra/terraform/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+
+env:
+  TERRAFORM_VERSION: '1.14.0'
+  TERRAGRUNT_VERSION: '0.93.11'
+  TARGET_ENV: ${{ inputs.environment || 'dev' }}
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.environment || 'dev' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Branch Constraints
+        run: |
+          TARGET_ENV="${{ env.TARGET_ENV }}"
+          BRANCH="${{ github.ref_name }}"
+          
+          echo "Target Environment: $TARGET_ENV"
+          echo "Current Branch: $BRANCH"
+          
+          if [ "$TARGET_ENV" == "prod" ] && [ "$BRANCH" != "main" ]; then
+            echo "❌ Error: Production can only be deployed from 'main' branch."
+            exit 1
+          fi
+          
+          echo "✅ Branch check passed."
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v3
+        with:
+          terragrunt-version: ${{ env.TERRAGRUNT_VERSION }}
+
+      - name: Install Doppler
+        run: |
+          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sh
+          
+      - name: Deploy Infrastructure
+        run: |
+          echo "🚀 Deploying to $TARGET_ENV..."
+          
+          # Use Makefile for consistency
+          # The Makefile uses 'doppler run' internally, so we need to provide the token
+          export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
+          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
+          
+          # Ensure TF Cloud token is available as env var for Terragrunt
+          export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
+          
+          # Run the make command for the specific environment
+          # We need to ensure non-interactive mode. Make run-* calls 'terragrunt run-all apply'
+          # We append -auto-approve via env var or arguments if the Makefile supports it?
+          # The Makefile runs: terragrunt run --all apply
+          # We should probably modify Makefile or call terragrunt directly to be safe and non-interactive.
+          # Let's call terragrunt directly to ensure auto-approval
+          
+          cd infra/terraform/live/${TARGET_ENV}
+          
+          doppler run --name-transformer tf-var -- \
+            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
