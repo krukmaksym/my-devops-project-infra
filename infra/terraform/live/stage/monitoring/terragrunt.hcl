@@ -17,8 +17,6 @@ locals {
   env = "stage"
 }
 
-inputs = {
-}
 
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
