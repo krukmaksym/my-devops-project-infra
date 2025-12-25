@@ -1,0 +1,36 @@
+victoria-metrics-operator:
+  enabled: true
+
+# Single-node configuration for cost efficiency
+vmsingle:
+  enabled: true
+  spec:
+    retentionPeriod: ${retention_period}
+    storage:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: "10Gi"
+
+# Disable cluster version by default
+vmcluster:
+  enabled: false
+
+vmagent:
+  enabled: true
+
+vmalert:
+  enabled: true
+
+grafana:
+  enabled: true
+  ingress:
+    enabled: false
+  persistence:
+    enabled: true
+    size: "2Gi"
+
+# Setup easy access for initial testing
+serviceAccount:
+  create: true
