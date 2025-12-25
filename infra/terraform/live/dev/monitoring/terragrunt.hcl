@@ -8,6 +8,19 @@ terraform {
 
 dependency "kubernetes" {
   config_path = "../kubernetes"
+
+  # Mocks are REQUIRED for 'plan' and 'validate' commands when the upstream 
+  # Kubernetes cluster hasn't been provisioned yet (e.g. initial pipeline run).
+  # They are NOT used during 'apply', so the actual deployment will connect 
+  # to the real cluster once it's created.
+  mock_outputs = {
+    cluster_id             = "mock-id"
+    endpoint               = "https://mock-endpoint"
+    cluster_token          = "mock-token"
+    cluster_ca_certificate = "bW9jay1jZXJ0" # base64 "mock-cert"
+  }
+
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
 locals {
