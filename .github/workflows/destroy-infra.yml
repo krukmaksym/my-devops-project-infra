@@ -82,10 +82,12 @@ jobs:
                 exit 1
              fi
              cd infra/terraform/live
+             # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
              CMD="run-all destroy"
           else
             if [ "$RESOURCE" == "all" ]; then
               cd infra/terraform/live/${TARGET_ENV}
+              # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
               CMD="run-all destroy"
             else
                # Check if directory exists
