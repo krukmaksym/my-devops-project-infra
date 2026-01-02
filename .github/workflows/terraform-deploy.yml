@@ -83,5 +83,7 @@ jobs:
           
           cd infra/terraform/live/${TARGET_ENV}
           
+          export TERRAGRUNT_NON_INTERACTIVE=true
+          
           doppler run --name-transformer tf-var -- \
-            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+            terragrunt run-all apply -auto-approve
