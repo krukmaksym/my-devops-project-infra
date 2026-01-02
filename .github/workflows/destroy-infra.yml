@@ -71,7 +71,7 @@ jobs:
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
           export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
           
-          export TERRAGRUNT_NON_INTERACTIVE=true
+          export TG_NON_INTERACTIVE=true
           
           RESOURCE="${{ inputs.resource || 'all' }}"
           echo "Target Resource: $RESOURCE"
@@ -82,13 +82,13 @@ jobs:
                 exit 1
              fi
              cd infra/terraform/live
-             # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
-             CMD="run-all destroy"
+             # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
+             CMD="run --all destroy"
           else
             if [ "$RESOURCE" == "all" ]; then
               cd infra/terraform/live/${TARGET_ENV}
-              # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
-              CMD="run-all destroy"
+              # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
+              CMD="run --all destroy"
             else
                # Check if directory exists
               if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
