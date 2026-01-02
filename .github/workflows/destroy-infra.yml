@@ -86,15 +86,19 @@ jobs:
              fi
              cd infra/terraform/live
               # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
-              # Explicitly include only non-network modules to avoid "Cannot delete default VPC" error.
-              # Exclusion flags proved unreliable, so we explicitly target kubernetes and monitoring.
-              CMD="run --all --queue-include-dir kubernetes --queue-include-dir **/kubernetes --queue-include-dir monitoring --queue-include-dir **/monitoring destroy"
+              # Dynamically include all directories EXCEPT 'network' to avoid "Cannot delete default VPC" error.
+              # This ensures new modules are strictly included without manual updates, while network is skipped.
+              INCLUDES=$(find . -maxdepth 1 -mindepth 1 -type d -not -name 'network' -not -name '.*' -exec basename {} \; | awk '{print "--queue-include-dir " $1}' | tr '\n' ' ')
+              echo "Dynamic Includes: $INCLUDES"
+              CMD="run --all $INCLUDES destroy"
             else
               if [ "$RESOURCE" == "all" ]; then
                 cd infra/terraform/live/${TARGET_ENV}
                 # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
-                # Explicitly include only non-network modules to avoid "Cannot delete default VPC" error.
-                CMD="run --all --queue-include-dir kubernetes --queue-include-dir **/kubernetes --queue-include-dir monitoring --queue-include-dir **/monitoring destroy"
+                # Dynamically include all directories EXCEPT 'network'
+                INCLUDES=$(find . -maxdepth 1 -mindepth 1 -type d -not -name 'network' -not -name '.*' -exec basename {} \; | awk '{print "--queue-include-dir " $1}' | tr '\n' ' ')
+                echo "Dynamic Includes: $INCLUDES"
+                CMD="run --all $INCLUDES destroy"
               else
                # Check if directory exists
               if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
