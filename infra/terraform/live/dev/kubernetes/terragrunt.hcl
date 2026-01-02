@@ -12,6 +12,9 @@ terraform {
 
 dependency "network" {
   config_path = "../network"
+  mock_outputs = {
+    vpc_id = "mock-vpc-id"
+  }
 }
 
 inputs = {
