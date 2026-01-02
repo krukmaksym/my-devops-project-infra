@@ -86,12 +86,14 @@ jobs:
              fi
              cd infra/terraform/live
              # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
-             CMD="run --all destroy"
+             # Exclude network module to avoid "Cannot delete default VPC" error
+             CMD="run --all destroy --terragrunt-exclude-dir '**/network'"
           else
             if [ "$RESOURCE" == "all" ]; then
               cd infra/terraform/live/${TARGET_ENV}
               # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
-              CMD="run --all destroy"
+              # Exclude network module to avoid "Cannot delete default VPC" error
+              CMD="run --all destroy --terragrunt-exclude-dir '**/network'"
             else
                # Check if directory exists
               if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
