@@ -40,7 +40,7 @@ provider "kubernetes" {
 }
 
 provider "helm" {
-  kubernetes {
+  kubernetes = {
     host                   = "${dependency.kubernetes.outputs.endpoint}"
     token                  = "${dependency.kubernetes.outputs.cluster_token}"
     cluster_ca_certificate = base64decode("${dependency.kubernetes.outputs.cluster_ca_certificate}")
