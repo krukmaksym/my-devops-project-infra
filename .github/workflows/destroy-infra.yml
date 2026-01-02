@@ -12,6 +12,16 @@ on:
           - stage
           - prod
           - all
+      resource:
+        description: 'Resource to destroy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - network
+          - kubernetes
+          - monitoring
       confirmation:
         description: 'Type "DESTROY" to confirm'
         required: true
@@ -61,13 +71,34 @@ jobs:
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
           export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
           
-          if [ "$TARGET_ENV" == "all" ]; then
-            cd infra/terraform/live
-          else
-            cd infra/terraform/live/${TARGET_ENV}
-          fi
-          
           export TERRAGRUNT_NON_INTERACTIVE=true
           
+          RESOURCE="${{ inputs.resource || 'all' }}"
+          echo "Target Resource: $RESOURCE"
+          
+          if [ "$TARGET_ENV" == "all" ]; then
+             if [ "$RESOURCE" != "all" ]; then
+                echo "❌ Error: Cannot select specific resource when Destruction Environment is 'all'."
+                exit 1
+             fi
+             cd infra/terraform/live
+             CMD="run-all destroy"
+          else
+            if [ "$RESOURCE" == "all" ]; then
+              cd infra/terraform/live/${TARGET_ENV}
+              CMD="run-all destroy"
+            else
+               # Check if directory exists
+              if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
+                echo "❌ Error: Resource directory 'infra/terraform/live/${TARGET_ENV}/${RESOURCE}' does not exist."
+                exit 1
+              fi
+              cd infra/terraform/live/${TARGET_ENV}/${RESOURCE}
+              CMD="destroy"
+            fi
+          fi
+          
+          echo "Executing: terragrunt $CMD"
+          
           doppler run --name-transformer tf-var -- \
-            terragrunt run-all destroy -auto-approve
+            terragrunt $CMD -auto-approve

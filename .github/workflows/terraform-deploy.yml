@@ -16,6 +16,16 @@ on:
           - dev
           - stage
           - prod
+      resource:
+        description: 'Resource to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - network
+          - kubernetes
+          - monitoring
 
 env:
   TERRAFORM_VERSION: '1.14.0'
@@ -73,17 +83,25 @@ jobs:
           
           # Ensure TF Cloud token is available as env var for Terragrunt
           export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
-          
-          # Run the make command for the specific environment
-          # We need to ensure non-interactive mode. Make run-* calls 'terragrunt run-all apply'
-          # We append -auto-approve via env var or arguments if the Makefile supports it?
-          # The Makefile runs: terragrunt run --all apply
-          # We should probably modify Makefile or call terragrunt directly to be safe and non-interactive.
-          # Let's call terragrunt directly to ensure auto-approval
-          
-          cd infra/terraform/live/${TARGET_ENV}
-          
           export TERRAGRUNT_NON_INTERACTIVE=true
           
+          RESOURCE="${{ inputs.resource || 'all' }}"
+          echo "Target Resource: $RESOURCE"
+          
+          if [ "$RESOURCE" == "all" ]; then
+            cd infra/terraform/live/${TARGET_ENV}
+            CMD="run-all apply"
+          else
+             # Check if directory exists
+            if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
+              echo "❌ Error: Resource directory 'infra/terraform/live/${TARGET_ENV}/${RESOURCE}' does not exist."
+              exit 1
+            fi
+            cd infra/terraform/live/${TARGET_ENV}/${RESOURCE}
+            CMD="apply"
+          fi
+          
+          echo "Executing: terragrunt $CMD"
+
           doppler run --name-transformer tf-var -- \
-            terragrunt run-all apply -auto-approve
+            terragrunt $CMD -auto-approve
