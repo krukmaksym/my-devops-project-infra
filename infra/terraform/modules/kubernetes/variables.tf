@@ -18,7 +18,7 @@ variable "environment" {
 variable "k8s_version" {
   description = "value"
   type        = string
-  default     = "1.34.0-do.0"
+  default     = "1.32.10-do.2"
 }
 
 variable "vpc_id" {
