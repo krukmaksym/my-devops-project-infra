@@ -1,0 +1,71 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        type: choice
+        options:
+          - dev
+          - stage
+          - prod
+          - all
+      confirmation:
+        description: 'Type "DESTROY" to confirm'
+        required: true
+        type: string
+
+env:
+  TERRAFORM_VERSION: '1.14.0'
+  TERRAGRUNT_VERSION: '0.93.11'
+
+jobs:
+  destroy:
+    name: Destroy ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Confirmation
+        run: |
+          if [ "${{ inputs.confirmation }}" != "DESTROY" ]; then
+            echo "❌ Error: Confirmation text does not match 'DESTROY'. Aborting."
+            exit 1
+          fi
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v3
+        with:
+          terragrunt-version: ${{ env.TERRAGRUNT_VERSION }}
+
+      - name: Install Doppler
+        run: |
+          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sh
+
+      - name: Destroy Infrastructure
+        run: |
+          TARGET_ENV="${{ inputs.environment }}"
+          echo "💥 Destroying $TARGET_ENV..."
+          
+          export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
+          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
+          
+          if [ "$TARGET_ENV" == "all" ]; then
+            cd infra/terraform/live
+          else
+            cd infra/terraform/live/${TARGET_ENV}
+          fi
+          
+          doppler run --name-transformer tf-var -- \
+            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
