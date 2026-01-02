@@ -28,6 +28,19 @@ generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
   contents  = <<EOF
+terraform {
+  required_providers {
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.24.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.12.0"
+    }
+  }
+}
+
 provider "kubernetes" {
   host                   = "${dependency.kubernetes.outputs.endpoint}"
   token                  = "${dependency.kubernetes.outputs.cluster_token}"
