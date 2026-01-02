@@ -94,11 +94,11 @@ jobs:
                 exit 1
               fi
               cd infra/terraform/live/${TARGET_ENV}/${RESOURCE}
-              CMD="destroy"
+              CMD="destroy -auto-approve"
             fi
           fi
           
           echo "Executing: terragrunt $CMD"
           
           doppler run --name-transformer tf-var -- \
-            terragrunt $CMD -auto-approve
+            terragrunt $CMD
