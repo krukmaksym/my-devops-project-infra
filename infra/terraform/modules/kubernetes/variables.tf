@@ -60,7 +60,7 @@ variable "node_pool_labels" {
   description = "Labels applied to the Kubernetes node pool"
   type        = map(string)
   default = {
-    owner = "DevOps Team"
+    owner = "DevOps-Team"
   }
 }
 

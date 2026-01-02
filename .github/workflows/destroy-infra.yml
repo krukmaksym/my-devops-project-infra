@@ -12,6 +12,16 @@ on:
           - stage
           - prod
           - all
+      resource:
+        description: 'Resource to destroy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - network
+          - kubernetes
+          - monitoring
       confirmation:
         description: 'Type "DESTROY" to confirm'
         required: true
@@ -51,7 +61,7 @@ jobs:
 
       - name: Install Doppler
         run: |
-          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sh
+          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sudo sh
 
       - name: Destroy Infrastructure
         run: |
@@ -59,13 +69,50 @@ jobs:
           echo "💥 Destroying $TARGET_ENV..."
           
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
-          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
+          export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
+          
+          # Set the Terraform CLI Cloud Token
+          export TF_TOKEN_app_terraform_io=${{ secrets.TF_CLOUD_TOKEN }}
+          
+          export TG_NON_INTERACTIVE=true
+          
+          RESOURCE="${{ inputs.resource || 'all' }}"
+          echo "Target Resource: $RESOURCE"
           
           if [ "$TARGET_ENV" == "all" ]; then
-            cd infra/terraform/live
-          else
-            cd infra/terraform/live/${TARGET_ENV}
+             if [ "$RESOURCE" != "all" ]; then
+                echo "❌ Error: Cannot select specific resource when Destruction Environment is 'all'."
+                exit 1
+             fi
+             cd infra/terraform/live
+              # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
+              # Dynamically include all directories EXCEPT 'network' to avoid "Cannot delete default VPC" error.
+              # This ensures new modules are strictly included without manual updates, while network is skipped.
+              # Added --queue-strict-include to prevent Terragrunt from implicitly including dependencies like 'network'.
+              INCLUDES=$(find . -maxdepth 1 -mindepth 1 -type d -not -name 'network' -not -name '.*' -exec basename {} \; | awk '{print "--queue-include-dir " $1}' | tr '\n' ' ')
+              echo "Dynamic Includes: $INCLUDES"
+              CMD="run --all --queue-strict-include $INCLUDES destroy"
+            else
+              if [ "$RESOURCE" == "all" ]; then
+                cd infra/terraform/live/${TARGET_ENV}
+                # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
+                # Dynamically include all directories EXCEPT 'network'
+                # Added --queue-strict-include to prevent Terragrunt from implicitly including dependencies like 'network'.
+                INCLUDES=$(find . -maxdepth 1 -mindepth 1 -type d -not -name 'network' -not -name '.*' -exec basename {} \; | awk '{print "--queue-include-dir " $1}' | tr '\n' ' ')
+                echo "Dynamic Includes: $INCLUDES"
+                CMD="run --all --queue-strict-include $INCLUDES destroy"
+              else
+               # Check if directory exists
+              if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
+                echo "❌ Error: Resource directory 'infra/terraform/live/${TARGET_ENV}/${RESOURCE}' does not exist."
+                exit 1
+              fi
+              cd infra/terraform/live/${TARGET_ENV}/${RESOURCE}
+              CMD="destroy -auto-approve"
+            fi
           fi
           
+          echo "Executing: terragrunt $CMD"
+          
           doppler run --name-transformer tf-var -- \
-            terragrunt run-all destroy --terragrunt-non-interactive -auto-approve
+            terragrunt $CMD

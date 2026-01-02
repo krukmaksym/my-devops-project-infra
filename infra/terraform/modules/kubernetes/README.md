@@ -39,7 +39,7 @@ No modules.
 | <a name="input_monitoring_node_count"></a> [monitoring\_node\_count](#input\_monitoring\_node\_count) | Number of nodes in the monitoring node pool (used when autoscaling is disabled) | `number` | `1` | no |
 | <a name="input_monitoring_node_size"></a> [monitoring\_node\_size](#input\_monitoring\_node\_size) | Droplet size for the monitoring node pool | `string` | `"s-2vcpu-2gb"` | no |
 | <a name="input_node_count"></a> [node\_count](#input\_node\_count) | Default count of nodes in the K8s cluster | `number` | `2` | no |
-| <a name="input_node_pool_labels"></a> [node\_pool\_labels](#input\_node\_pool\_labels) | Labels applied to the Kubernetes node pool | `map(string)` | <pre>{<br/>  "owner": "DevOps Team"<br/>}</pre> | no |
+| <a name="input_node_pool_labels"></a> [node\_pool\_labels](#input\_node\_pool\_labels) | Labels applied to the Kubernetes node pool | `map(string)` | <pre>{<br/>  "owner": "DevOps-Team"<br/>}</pre> | no |
 | <a name="input_node_size"></a> [node\_size](#input\_node\_size) | Default node size used by K8s cluster | `string` | `"s-2vcpu-2gb"` | no |
 | <a name="input_region"></a> [region](#input\_region) | DigitalOcean region | `string` | `"fra1"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to be applied for resource | `set(string)` | n/a | yes |

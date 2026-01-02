@@ -16,6 +16,16 @@ on:
           - dev
           - stage
           - prod
+      resource:
+        description: 'Resource to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - network
+          - kubernetes
+          - monitoring
 
 env:
   TERRAFORM_VERSION: '1.14.0'
@@ -60,7 +70,7 @@ jobs:
 
       - name: Install Doppler
         run: |
-          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sh
+          (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sudo sh
           
       - name: Deploy Infrastructure
         run: |
@@ -69,19 +79,32 @@ jobs:
           # Use Makefile for consistency
           # The Makefile uses 'doppler run' internally, so we need to provide the token
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
-          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
           
           # Ensure TF Cloud token is available as env var for Terragrunt
           export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
+          # Set the Terraform CLI Cloud Token
+          export TF_TOKEN_app_terraform_io=${{ secrets.TF_CLOUD_TOKEN }}
+          export TG_NON_INTERACTIVE=true
           
-          # Run the make command for the specific environment
-          # We need to ensure non-interactive mode. Make run-* calls 'terragrunt run-all apply'
-          # We append -auto-approve via env var or arguments if the Makefile supports it?
-          # The Makefile runs: terragrunt run --all apply
-          # We should probably modify Makefile or call terragrunt directly to be safe and non-interactive.
-          # Let's call terragrunt directly to ensure auto-approval
+          RESOURCE="${{ inputs.resource || 'all' }}"
+          echo "Target Resource: $RESOURCE"
           
-          cd infra/terraform/live/${TARGET_ENV}
+          if [ "$RESOURCE" == "all" ]; then
+            cd infra/terraform/live/${TARGET_ENV}
+            # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
+            # Adding -auto-approve explicitly causes a "flag provided but not defined" error.
+            CMD="run --all apply"
+          else
+             # Check if directory exists
+            if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
+              echo "❌ Error: Resource directory 'infra/terraform/live/${TARGET_ENV}/${RESOURCE}' does not exist."
+              exit 1
+            fi
+            cd infra/terraform/live/${TARGET_ENV}/${RESOURCE}
+            CMD="apply -auto-approve"
+          fi
           
+          echo "Executing: terragrunt $CMD"
+
           doppler run --name-transformer tf-var -- \
-            terragrunt run-all apply --terragrunt-non-interactive -auto-approve
+            terragrunt $CMD
