@@ -83,16 +83,16 @@ jobs:
           
           # Ensure TF Cloud token is available as env var for Terragrunt
           export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
-          export TERRAGRUNT_NON_INTERACTIVE=true
+          export TG_NON_INTERACTIVE=true
           
           RESOURCE="${{ inputs.resource || 'all' }}"
           echo "Target Resource: $RESOURCE"
           
           if [ "$RESOURCE" == "all" ]; then
             cd infra/terraform/live/${TARGET_ENV}
-            # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
+            # Note: terragrunt run --all handles auto-approval automatically in non-interactive mode.
             # Adding -auto-approve explicitly causes a "flag provided but not defined" error.
-            CMD="run-all apply"
+            CMD="run --all apply"
           else
              # Check if directory exists
             if [ ! -d "infra/terraform/live/${TARGET_ENV}/${RESOURCE}" ]; then
