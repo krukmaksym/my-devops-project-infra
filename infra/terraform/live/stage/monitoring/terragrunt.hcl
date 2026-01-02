@@ -8,6 +8,12 @@ terraform {
 
 dependency "kubernetes" {
   config_path = "../kubernetes"
+
+  # Skip fetching real outputs - the stage kubernetes cluster doesn't exist yet.
+  # This forces Terragrunt to use mock_outputs for all commands.
+  # TODO: Remove this once the stage kubernetes cluster is deployed.
+  skip_outputs = true
+
   # Mock outputs allow us to validate and plan even if the Kubernetes cluster
   # hasn't been instantiated yet (e.g. during CI checks for other envs).
   mock_outputs = {
