@@ -69,7 +69,8 @@ jobs:
           echo "💥 Destroying $TARGET_ENV..."
           
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
-          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
+          export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
+          
           # Set the Terraform CLI Cloud Token
           export TF_TOKEN_app_terraform_io=${{ secrets.TF_CLOUD_TOKEN }}
           

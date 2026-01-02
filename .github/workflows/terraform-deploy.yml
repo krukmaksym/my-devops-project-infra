@@ -79,7 +79,6 @@ jobs:
           # Use Makefile for consistency
           # The Makefile uses 'doppler run' internally, so we need to provide the token
           export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
-          export TF_CLOUD_TOKEN=${{ secrets.TF_CLOUD_TOKEN }}
           
           # Ensure TF Cloud token is available as env var for Terragrunt
           export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
