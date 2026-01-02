@@ -83,6 +83,8 @@ jobs:
           
           # Ensure TF Cloud token is available as env var for Terragrunt
           export TF_VAR_tf_cloud_token=${{ secrets.TF_CLOUD_TOKEN }}
+          # Set the Terraform CLI Cloud Token
+          export TF_TOKEN_app_terraform_io=${{ secrets.TF_CLOUD_TOKEN }}
           export TG_NON_INTERACTIVE=true
           
           RESOURCE="${{ inputs.resource || 'all' }}"
