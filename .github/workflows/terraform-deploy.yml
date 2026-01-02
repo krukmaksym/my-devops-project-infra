@@ -90,6 +90,8 @@ jobs:
           
           if [ "$RESOURCE" == "all" ]; then
             cd infra/terraform/live/${TARGET_ENV}
+            # Note: terragrunt run-all handles auto-approval automatically in non-interactive mode.
+            # Adding -auto-approve explicitly causes a "flag provided but not defined" error.
             CMD="run-all apply"
           else
              # Check if directory exists
