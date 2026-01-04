@@ -131,7 +131,7 @@ my-devops-project-infra/
         ├── modules/              # Reusable Terraform modules
         │   ├── network/          # VPC provisioning
         │   ├── kubernetes/       # DOKS cluster + node pools
-        │   └── monitoring/       # [TODO] Observability stack
+        │   └── monitoring/       # VictoriaMetrics observability stack
         └── live/                 # Environment-specific configurations
             ├── root.hcl          # Global Terragrunt config
             ├── _env/             # Environment variable definitions
@@ -216,6 +216,7 @@ doppler --version
 | **Multi-environment setup** | ✅ Complete | dev, stage, prod environments with graduated sizing |
 | **Network module** | ✅ Complete | VPC provisioning with environment-specific CIDR blocks |
 | **Kubernetes module** | ✅ Complete | DOKS cluster with app + monitoring node pools |
+| **Monitoring module** | ✅ Complete | VictoriaMetrics stack with Grafana dashboards |
 | **Terragrunt DRY config** | ✅ Complete | Centralized configuration, minimal duplication |
 | **Doppler integration** | ✅ Complete | Secure secret management via Makefile |
 | **Remote state** | ✅ Complete | Terraform Cloud backend |
@@ -224,13 +225,12 @@ doppler --version
 | **Tagging strategy** | ✅ Complete | Consistent tagging across resources |
 | **Auto-scaling** | ✅ Complete | Node pool auto-scaling configured |
 | **Lifecycle protection** | ✅ Complete | prevent_destroy on critical resources |
-| **CI/CD Pipeline** | ✅ Complete | GitHub Actions PR validation workflow |
+| **CI/CD Pipeline** | ✅ Complete | GitHub Actions PR validation, deployment, and destroy workflows |
 
 ### 🚧 In Progress / Planned
 
 | Component | Priority | Status | Target Completion |
 |-----------|----------|--------|-------------------|
-| **Monitoring module** | High | 🚧 In Progress | Week 2-3 |
 | **ArgoCD setup** | Medium | 📋 Planned | Week 4-5 |
 | **GitOps workflow** | Medium | 📋 Planned | Week 5-6 |
 | **Observability dashboards** | Medium | 📋 Planned | Week 6-7 |
@@ -242,9 +242,13 @@ doppler --version
 
 ## CI/CD Pipeline
 
-### GitHub Actions Workflow
+### GitHub Actions Workflows
 
-The project includes an automated PR validation workflow ([`.github/workflows/terraform-pr.yml`](.github/workflows/terraform-pr.yml)) that runs on every pull request to `main`.
+The project includes three automated GitHub Actions workflows for comprehensive infrastructure management:
+
+#### 1. PR Validation Workflow ([`terraform-pr.yml`](.github/workflows/terraform-pr.yml))
+
+Runs on every pull request to `main` for validation and planning.
 
 #### Workflow Features
 
@@ -254,6 +258,28 @@ The project includes an automated PR validation workflow ([`.github/workflows/te
 4. **Parallel Validation**: Runs `terragrunt validate` in parallel for all affected env/module combinations
 5. **Parallel Planning**: Generates Terraform plans for all changes and posts summaries as PR comments
 6. **Summary Report**: Aggregates results from all jobs and provides overall workflow status
+
+#### 2. Deployment Workflow ([`terraform-deploy.yml`](.github/workflows/terraform-deploy.yml))
+
+Automated deployment workflow triggered on push to `main` or manual workflow dispatch.
+
+**Features:**
+- Manual deployment with environment selection (dev/stage/prod)
+- Resource-specific deployment (network, kubernetes, monitoring, or all)
+- Branch constraints (production deployments only from `main`)
+- Doppler secrets integration
+- Support for both selective and bulk deployments
+
+#### 3. Infrastructure Destroy Workflow ([`destroy-infra.yml`](.github/workflows/destroy-infra.yml))
+
+Manual workflow for safely destroying infrastructure with safeguards.
+
+**Features:**
+- Requires "DESTROY" confirmation text to execute
+- Environment selection (dev/stage/prod/all)
+- Resource-specific destruction
+- Smart network exclusion (prevents "Cannot delete default VPC" error)
+- Strict dependency handling with `--queue-strict-include`
 
 #### Change Detection Logic
 
@@ -293,19 +319,19 @@ The workflow uses a hybrid approach:
 - [x] Add troubleshooting guide
 
 #### Week 2-3: Monitoring Stack
-- [ ] Implement monitoring Terraform module (VictoriaMetrics)
-- [ ] Deploy victoria-metrics-k8s-stack via Helm
+- [x] Implement monitoring Terraform module (VictoriaMetrics)
+- [x] Deploy victoria-metrics-k8s-stack via Helm
 - [ ] Configure Grafana dashboards
 - [ ] Set up Loki for centralized logging
 - [ ] Create initial alerting rules
 
 #### Week 3-4: Enhanced CI/CD Pipeline
-- [ ] Create GitHub Actions PR validation workflow
-- [ ] Smart change detection and matrix strategy
-- [ ] Parallel validate and plan jobs
-- [ ] PR comment with plan summaries
-- [ ] Create Dev-only deployment pipeline
-- [ ] Create Infrastructure Destroy pipeline
+- [x] Create GitHub Actions PR validation workflow
+- [x] Smart change detection and matrix strategy
+- [x] Parallel validate and plan jobs
+- [x] PR comment with plan summaries
+- [x] Create deployment pipeline
+- [x] Create Infrastructure Destroy pipeline
 - [ ] Add security scanning (trivy, checkov, tfsec)
 - [ ] Cost estimation (Infracost)
 - [ ] Auto-apply on merge to main
@@ -498,6 +524,23 @@ Provisions a DOKS cluster with separate node pools for applications and monitori
 
 **Outputs**: Cluster ID, endpoints, kubeconfig (sensitive)
 
+### Monitoring Module
+
+**Location**: [infra/terraform/modules/monitoring/](infra/terraform/modules/monitoring/)
+
+Deploys VictoriaMetrics observability stack to Kubernetes clusters.
+
+**Features**:
+- VictoriaMetrics time-series database
+- Grafana for visualization
+- Kubernetes metrics collection
+- Customizable retention period
+- Helm-based deployment
+
+**Inputs**: See [variables.tf](infra/terraform/modules/kubernetes/variables.tf)
+
+**Outputs**: Namespace name, Helm release status
+
 ---
 
 ## Best Practices Demonstrated
@@ -588,14 +631,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Metric | Value |
 |--------|-------|
 | Environments | 3 (dev, stage, prod) |
-| Terraform Modules | 2 (network, kubernetes) |
-| Lines of Terraform Code | ~200 |
+| Terraform Modules | 3 (network, kubernetes, monitoring) |
+| Lines of Terraform Code | ~346 |
 | Cloud Regions | 1 (fra1) |
 | Kubernetes Versions | 1.34.0-do.0 |
 | Total Nodes (dev) | 2-4 (auto-scaled) |
+| GitHub Actions Workflows | 3 (PR validation, deployment, destroy) |
 
 ---
 
 **Status**: 🚧 Active Development
-**Last Updated**: 2025-11-28
-**Version**: 0.3.0 (CI/CD Pipeline Complete)
+**Last Updated**: 2026-01-04
+**Version**: 0.4.0 (Monitoring Stack & Enhanced CI/CD)
