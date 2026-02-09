@@ -1,0 +1,41 @@
+name: 'Infracost Estimate'
+description: 'Runs Infracost to estimate cloud costs'
+inputs:
+  api_key:
+    description: 'Infracost API Key'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Infracost
+      uses: infracost/actions/setup@v3
+      with:
+        api-key: ${{ inputs.api_key }}
+
+    - name: Check Infracost API Key
+      id: check_key
+      shell: bash
+      run: |
+        if [ -z "${{ inputs.api_key }}" ]; then
+          echo "⚠️ INFRACOST_API_KEY not found. Skipping cost estimation."
+          echo "has_key=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_key=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Run Infracost breakdown
+      if: steps.check_key.outputs.has_key == 'true'
+      shell: bash
+      run: |
+        infracost breakdown --path infra/terraform \
+          --format json \
+          --out-file /tmp/infracost.json
+      continue-on-error: true
+
+    - name: Post Infracost comment
+      if: steps.check_key.outputs.has_key == 'true'
+      shell: bash
+      run: |
+        infracost comment github --path /tmp/infracost.json \
+          --behavior update \
+          --github-token ${{ github.token }}
