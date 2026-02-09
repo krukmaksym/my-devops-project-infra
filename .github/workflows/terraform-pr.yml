@@ -54,97 +54,12 @@ jobs:
           fetch-depth: 0  # Full history needed for PR diff
 
       # Detect changed .tf and .hcl files in modules and live directories
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v41
-        with:
-          files: |
-            infra/terraform/modules/**/*.tf
-            infra/terraform/live/**/*.tf
-            infra/terraform/live/**/*.hcl
-          base_sha: ${{ github.event.pull_request.base.sha }}
-          sha: ${{ github.event.pull_request.head.sha }}
-
-      # Parse changed files and build a JSON matrix of {env, module} combinations
-      - name: Set matrix for changed modules
+      - name: Detect Changes
         id: set-matrix
-        run: |
-          # Get space-separated list of changed files
-          changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
-
-          if [ -z "$changed_files" ]; then
-            echo "❌ No terraform files changed"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "has_changes=true" >> $GITHUB_OUTPUT
-
-          # Convert space-separated to newline-separated and filter by path
-          module_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/modules/" || true)
-          live_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/live/" || echo "")
-
-          matrix_items=""
-
-          # If module changed (e.g., modules/network/main.tf), plan ALL environments
-          # This ensures shared module changes are validated across dev, stage, prod
-          if [ -n "$module_changes" ]; then
-            echo "📦 Module changes detected: $module_changes"
-
-            # Extract module names (network, kubernetes, etc.)
-            changed_modules=$(echo "$module_changes" | \
-              sed -E 's|infra/terraform/modules/([^/]+)/.*|\1|' | \
-              sort -u)
-
-            # For each changed module, add all environments to the matrix
-            for module in $changed_modules; do
-              echo "  Planning all environments for module: $module"
-              for env in dev stage prod; do
-                matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
-              done
-            done
-          fi
-
-          # If live config changed (e.g., live/dev/network/terragrunt.hcl), plan only that specific env
-          if [ -n "$live_changes" ]; then
-            echo "🔧 Live changes detected: $live_changes"
-
-            # Extract env and module from path: live/dev/network/... -> "dev network"
-            live_modules=$(echo "$live_changes" | \
-              grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes)" | \
-              sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
-              sort -u)
-
-            # Add to matrix
-            while IFS= read -r item; do
-              if [ -n "$item" ]; then
-                env=$(echo "$item" | awk '{print $1}')
-                module=$(echo "$item" | awk '{print $2}')
-                matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
-                echo "  Planning for: ${env}/${module}"
-              fi
-            done <<< "$live_modules"
-          fi
-
-          # Remove trailing comma and deduplicate with jq
-          matrix_items="${matrix_items%,}"
-
-          if [ -z "$matrix_items" ]; then
-            echo "❌ No valid changes detected after parsing"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Build final JSON matrix: {"include":[{"env":"dev","module":"network"},...]}
-          matrix_json=$(echo "{\"include\":[${matrix_items}]}" | \
-            jq -c '.include | unique | {include: .}')
-
-          echo "✅ Matrix: $matrix_json"
-          echo "matrix<<EOF" >> $GITHUB_OUTPUT
-          echo "$matrix_json" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+        uses: ./.github/actions/detect-infra-changes
+        with:
+          base_sha: ${{ github.event.pull_request.base.sha }}
+          head_sha: ${{ github.event.pull_request.head.sha }}
 
   # Check terraform code formatting (runs on all PRs, even if no changes detected)
   terraform-format:
@@ -166,6 +81,72 @@ jobs:
           echo "🎨 Checking Terraform formatting..."
           cd infra/terraform
           terraform fmt -check -recursive -diff
+
+  # Run Checkov for IaC security scanning
+  checkov-scan:
+    name: Checkov Security Scan
+    runs-on: ubuntu-latest
+    needs: security-gate
+    if: needs.security-gate.outputs.should_run == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: infra/terraform
+          framework: terraform
+          soft_fail: true  # Don't fail the build initially
+          output_format: cli,sarif
+          output_file_path: console,results.sarif
+
+      - name: Upload SARIF file
+        if: success() || failure()
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: results.sarif
+          category: checkov
+
+  # Run Trivy for vulnerability scanning
+  trivy-scan:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: security-gate
+    if: needs.security-gate.outputs.should_run == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'infra/terraform'
+          format: 'table'
+          exit-code: '0'  # Don't fail the build initially
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+
+  # Run Infracost for cloud cost estimation
+  infracost-breakdown:
+    name: Infracost Estimate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    needs: security-gate
+    if: needs.security-gate.outputs.should_run == 'true'
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Infracost Estimate
+        uses: ./.github/actions/infracost-estimate
+        with:
+          api_key: ${{ secrets.INFRACOST_API_KEY }}
 
   # Run terragrunt validate for each env/module combination (runs in parallel via matrix)
   # Note: Must run init before validate, as Terraform needs initialized providers
@@ -298,7 +279,7 @@ jobs:
   plan-summary:
     name: Plan Summary
     runs-on: ubuntu-latest
-    needs: [terraform-format, terragrunt-validate, terragrunt-plan]
+    needs: [terraform-format, terragrunt-validate, terragrunt-plan, checkov-scan, trivy-scan, infracost-breakdown]
     if: always()  # Run even if previous jobs fail
     steps:
       - name: Check Results
@@ -310,6 +291,27 @@ jobs:
           if [ "${{ needs.terraform-format.result }}" != "success" ]; then
             echo "❌ Terraform format check failed" >> $GITHUB_STEP_SUMMARY
             exit 1
+          fi
+
+          # Check Checkov
+          if [ "${{ needs.checkov-scan.result }}" != "success" ]; then
+             echo "⚠️ Checkov scan found potential issues (check logs)" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "✅ Checkov scan passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check Trivy
+          if [ "${{ needs.trivy-scan.result }}" != "success" ]; then
+             echo "⚠️ Trivy scan found potential vulnerabilities (check logs)" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "✅ Trivy scan passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check Infracost
+          if [ "${{ needs.infracost-breakdown.result }}" != "success" ]; then
+             echo "⚠️ Infracost estimation failed or skipped (check logs)" >> $GITHUB_STEP_SUMMARY
+          else
+             echo "✅ Infracost estimation completed" >> $GITHUB_STEP_SUMMARY
           fi
 
           # Check validation

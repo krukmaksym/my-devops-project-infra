@@ -1,0 +1,110 @@
+name: 'Detect Infrastructure Changes'
+description: 'Detects changed Terraform modules and generates a build matrix'
+inputs:
+  base_sha:
+    description: 'Base commit SHA'
+    required: true
+  head_sha:
+    description: 'Head commit SHA'
+    required: true
+outputs:
+  matrix:
+    description: 'JSON matrix of changed environments and modules'
+    value: ${{ steps.set-matrix.outputs.matrix }}
+  has_changes:
+    description: 'Boolean indicating if any Terraform files changed'
+    value: ${{ steps.set-matrix.outputs.has_changes }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v41
+      with:
+        files: |
+          infra/terraform/modules/**/*.tf
+          infra/terraform/live/**/*.tf
+          infra/terraform/live/**/*.hcl
+        base_sha: ${{ inputs.base_sha }}
+        sha: ${{ inputs.head_sha }}
+
+    - name: Set matrix for changed modules
+      id: set-matrix
+      shell: bash
+      run: |
+        # Get space-separated list of changed files
+        changed_files="${{ steps.changed-files.outputs.all_changed_files }}"
+
+        if [ -z "$changed_files" ]; then
+          echo "❌ No terraform files changed"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "has_changes=true" >> $GITHUB_OUTPUT
+
+        # Convert space-separated to newline-separated and filter by path
+        module_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/modules/" || true)
+        live_changes=$(echo "$changed_files" | tr ' ' '\n' | grep "infra/terraform/live/" || echo "")
+
+        matrix_items=""
+
+        # If module changed (e.g., modules/network/main.tf), plan ALL environments
+        # This ensures shared module changes are validated across dev, stage, prod
+        if [ -n "$module_changes" ]; then
+          echo "📦 Module changes detected: $module_changes"
+
+          # Extract module names (network, kubernetes, etc.)
+          changed_modules=$(echo "$module_changes" | \
+            sed -E 's|infra/terraform/modules/([^/]+)/.*|\1|' | \
+            sort -u)
+
+          # For each changed module, add all environments to the matrix
+          for module in $changed_modules; do
+            echo "  Planning all environments for module: $module"
+            for env in dev stage prod; do
+              matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
+            done
+          done
+        fi
+
+        # If live config changed (e.g., live/dev/network/terragrunt.hcl), plan only that specific env
+        if [ -n "$live_changes" ]; then
+          echo "🔧 Live changes detected: $live_changes"
+
+          # Extract env and module from path: live/dev/network/... -> "dev network"
+          live_modules=$(echo "$live_changes" | \
+            grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes)" | \
+            sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
+            sort -u)
+
+          # Add to matrix
+          while IFS= read -r item; do
+            if [ -n "$item" ]; then
+              env=$(echo "$item" | awk '{print $1}')
+              module=$(echo "$item" | awk '{print $2}')
+              matrix_items="${matrix_items}{\"env\":\"${env}\",\"module\":\"${module}\"},"
+              echo "  Planning for: ${env}/${module}"
+            fi
+          done <<< "$live_modules"
+        fi
+
+        # Remove trailing comma and deduplicate with jq
+        matrix_items="${matrix_items%,}"
+
+        if [ -z "$matrix_items" ]; then
+          echo "❌ No valid changes detected after parsing"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "matrix={\"include\":[]}" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Build final JSON matrix: {"include":[{"env":"dev","module":"network"},...]}
+        matrix_json=$(echo "{\"include\":[${matrix_items}]}" | \
+          jq -c '.include | unique | {include: .}')
+
+        echo "✅ Matrix: $matrix_json"
+        echo "matrix<<EOF" >> $GITHUB_OUTPUT
+        echo "$matrix_json" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
