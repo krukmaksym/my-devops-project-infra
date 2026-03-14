@@ -46,4 +46,3 @@ jobs:
           prompt: "Please review this pull request."
           use_sticky_comment: true
           display_report: true
-          claude_args: "--allowedTools Bash,Read,Glob,Grep"
