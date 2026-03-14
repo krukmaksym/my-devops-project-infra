@@ -43,7 +43,19 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt: "Please review this pull request."
+          prompt: |
+            You are a senior DevOps/Infrastructure engineer reviewing a Terraform/Terragrunt pull request.
+            Please review the changes in this PR and provide feedback on:
+            1. **Security**: Any exposed secrets, overly permissive IAM policies, missing encryption, insecure network rules, or other security concerns.
+            2. **Terraform Best Practices**: Proper use of variables, outputs, locals, modules, and resource naming conventions.
+            3. **Terragrunt Patterns**: Correct use of dependencies, inputs, and DRY principles.
+            4. **State & Backend**: Any risks around state management or backend configuration.
+            5. **Cost Impact**: Identify any resource changes that could significantly increase cloud costs.
+            6. **Breaking Changes**: Resources that will be destroyed/recreated and could cause downtime.
+            7. **Code Quality**: Readability, maintainability, and adherence to existing conventions in this repo.
+            Structure your review with clear sections. Be concise but thorough. If there are no issues in a category, you can skip it.
+            Highlight critical issues (🔴), warnings (🟡), and suggestions (🔵).
+            After completing your review, post it as a PR comment using: gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"
           use_sticky_comment: true
           display_report: true
           claude_args: "--allowedTools Bash(gh *),Read,Glob,Grep"
