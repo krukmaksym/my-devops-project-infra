@@ -24,7 +24,8 @@ dependency "kubernetes" {
 }
 
 locals {
-  env = "dev"
+  env     = "dev"
+  module  = "monitoring"
 }
 
 generate "provider_k8s" {
