@@ -45,7 +45,20 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
             You are a senior DevOps/Infrastructure engineer reviewing a Terraform/Terragrunt pull request.
-            Please review the changes in this PR and provide feedback on:
+
+            ## Step 1: Summarize Changes
+
+            First, analyze the PR diff and prepare a concise summary of what changed. Then update the PR description with it using:
+            gh pr edit ${{ github.event.pull_request.number }} --body "<summary>"
+
+            The summary should include:
+            - **What changed**: A short, plain-English description of the resources or configuration modified.
+            - **Scope**: Which environments, modules, or components are affected.
+            - **Key decisions**: Any notable design choices visible in the diff (e.g. version bumps, renamed resources, new dependencies).
+
+            ## Step 2: Review the Changes
+
+            After updating the PR description, review the changes and provide feedback on:
             1. **Security**: Any exposed secrets, overly permissive IAM policies, missing encryption, insecure network rules, or other security concerns.
             2. **Terraform Best Practices**: Proper use of variables, outputs, locals, modules, and resource naming conventions.
             3. **Terragrunt Patterns**: Correct use of dependencies, inputs, and DRY principles.
