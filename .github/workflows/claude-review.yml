@@ -44,12 +44,20 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: |
-            You are a senior DevOps/Infrastructure engineer reviewing a Terraform/Terragrunt pull request.
+            You are a senior DevOps/Infrastructure engineer reviewing a pull request.
 
-            ## Step 1: Summarize Changes
+            ## Step 1: Expand PR Description
 
-            First, analyze the PR diff and prepare a concise summary of what changed. Then update the PR description with it using:
-            gh pr edit ${{ github.event.pull_request.number }} --body "<summary>"
+            First, analyze the PR diff and prepare a concise summary of what changed.
+
+            Then read the current PR description:
+            gh pr view ${{ github.event.pull_request.number }} --json body --jq '.body'
+
+            - If the description is empty or only contains a placeholder, replace it with your summary.
+            - If the author has already written a meaningful description, append your summary below it under a `## Claude Summary` heading, preserving their content.
+
+            Update the description using:
+            gh pr edit ${{ github.event.pull_request.number }} --body "<updated body>"
 
             The summary should include:
             - **What changed**: A short, plain-English description of the resources or configuration modified.
@@ -68,7 +76,5 @@ jobs:
             7. **Code Quality**: Readability, maintainability, and adherence to existing conventions in this repo.
             Structure your review with clear sections. Be concise but thorough. If there are no issues in a category, you can skip it.
             Highlight critical issues (🔴), warnings (🟡), and suggestions (🔵).
-            After completing your review, post it as a PR comment using: gh pr comment ${{ github.event.pull_request.number }} --body "<your review>"
           use_sticky_comment: true
-          display_report: true
           claude_args: "--allowedTools Bash(gh *),Read,Glob,Grep"
