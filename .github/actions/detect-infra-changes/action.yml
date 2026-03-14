@@ -75,9 +75,9 @@ runs:
 
           # Extract env and module from path: live/dev/network/... -> "dev network"
           live_modules=$(echo "$live_changes" | \
-            grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes)" | \
+            grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes|monitoring)" | \
             sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
-            sort -u)
+            sort -u || true)
 
           # Add to matrix
           while IFS= read -r item; do
