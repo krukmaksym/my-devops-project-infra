@@ -41,7 +41,7 @@ jobs:
       - name: Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
-          direct_prompt: "Please review this pull request."
+          prompt: "Please review this pull request."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
