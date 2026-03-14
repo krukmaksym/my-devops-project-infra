@@ -42,5 +42,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: "Please review this pull request."
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: "Please review this pull request."
+          use_sticky_comment: true
