@@ -27,7 +27,6 @@ locals {
   env = "dev"
 }
 
-
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"
