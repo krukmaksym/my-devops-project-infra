@@ -46,3 +46,4 @@ jobs:
           prompt: "Please review this pull request."
           use_sticky_comment: true
           display_report: true
+          show_full_output: true
