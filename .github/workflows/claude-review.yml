@@ -45,3 +45,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           prompt: "Please review this pull request."
           use_sticky_comment: true
+          display_report: true
+          claude_args: "--allowedTools Bash,Read,Glob,Grep"
