@@ -10,7 +10,7 @@ locals {
   #
   # Phase 3: Configure GitHub OAuth SSO via Dex:
   #   1. Create GitHub OAuth App with callback: https://<LB-IP>/api/dex/callback
-  #   2. Fill in argocd_url, github_oauth_client_id/secret, github_org
+  #   2. Fill in argocd_url, github_oauth_client_id/secret, github_org, github_admin_team
   #   3. Set admin_enabled = false, server_insecure = false
   #   4. Restrict lb_source_ranges to known CIDRs if needed
   #   5. Re-apply
@@ -27,6 +27,7 @@ locals {
       github_oauth_client_id     = ""
       github_oauth_client_secret = ""
       github_org                 = ""
+      github_admin_team          = ""
     }
 
     stage = {
@@ -40,6 +41,7 @@ locals {
       github_oauth_client_id     = ""
       github_oauth_client_secret = ""
       github_org                 = ""
+      github_admin_team          = ""
     }
 
     prod = {
@@ -53,6 +55,7 @@ locals {
       github_oauth_client_id     = ""
       github_oauth_client_secret = ""
       github_org                 = ""
+      github_admin_team          = ""
     }
   }
 }

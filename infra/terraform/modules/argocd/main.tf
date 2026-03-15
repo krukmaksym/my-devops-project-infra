@@ -25,18 +25,25 @@ resource "helm_release" "argocd" {
   cleanup_on_fail = true
   replace         = var.replace_on_failure
 
-  values = concat(
-    [templatefile("${path.module}/values.yaml", {
-      lb_source_ranges           = var.lb_source_ranges
-      server_insecure            = var.server_insecure
-      admin_enabled              = var.admin_enabled
-      environment                = var.environment
-      dex_enabled                = var.github_oauth_client_id != ""
-      argocd_url                 = var.argocd_url
-      github_oauth_client_id     = var.github_oauth_client_id
-      github_oauth_client_secret = var.github_oauth_client_secret
-      github_org                 = var.github_org
-    })],
-    var.helm_values
-  )
+  values = [templatefile("${path.module}/values.yaml", {
+    lb_source_ranges       = var.lb_source_ranges
+    server_insecure        = var.server_insecure
+    admin_enabled          = var.admin_enabled
+    environment            = var.environment
+    dex_enabled            = var.github_oauth_client_id != ""
+    argocd_url             = var.argocd_url
+    github_oauth_client_id = var.github_oauth_client_id
+    github_org             = var.github_org
+    github_admin_team      = var.github_admin_team
+  })]
+
+  # Keep the OAuth client secret out of the rendered values YAML and
+  # Terraform plan output.  ArgoCD's dex.config references it as
+  # $dex.github.clientSecret, which resolves at runtime from argocd-secret.
+  set_sensitive = var.github_oauth_client_secret != "" ? [
+    {
+      name  = "configs.secret.extra.dex\\.github\\.clientSecret"
+      value = var.github_oauth_client_secret
+    }
+  ] : []
 }
