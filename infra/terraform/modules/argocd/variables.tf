@@ -24,8 +24,8 @@ variable "lb_source_ranges" {
   }
 
   validation {
-    condition     = alltrue([for cidr in var.lb_source_ranges : !startswith(cidr, "PLACEHOLDER")])
-    error_message = "lb_source_ranges contains a PLACEHOLDER value — replace with real CIDRs before applying."
+    condition     = alltrue([for cidr in var.lb_source_ranges : cidr != "0.0.0.0/0"])
+    error_message = "lb_source_ranges contains 0.0.0.0/0 — restrict to specific CIDRs before applying."
   }
 }
 
@@ -45,6 +45,31 @@ variable "replace_on_failure" {
   description = "Allow Terraform to replace a failed Helm release (safe for dev, risky for prod)"
   type        = bool
   default     = false
+}
+
+variable "github_oauth_client_id" {
+  description = "GitHub OAuth App client ID for Dex SSO"
+  type        = string
+  default     = ""
+}
+
+variable "github_oauth_client_secret" {
+  description = "GitHub OAuth App client secret for Dex SSO"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "github_org" {
+  description = "GitHub organization — only members of this org can log in"
+  type        = string
+  default     = ""
+}
+
+variable "argocd_url" {
+  description = "External URL of ArgoCD (e.g. http://<LB-IP>) — required for OAuth callback"
+  type        = string
+  default     = ""
 }
 
 variable "helm_values" {

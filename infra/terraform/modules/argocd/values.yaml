@@ -54,7 +54,23 @@ redis:
       memory: 128Mi
 
 dex:
-  enabled: false
+  enabled: ${dex_enabled}
+%{ if dex_enabled ~}
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+%{ endif ~}
 
 notifications:
   enabled: false
@@ -71,5 +87,33 @@ applicationSet:
 configs:
   params:
     server.insecure: "${server_insecure}"
+%{ if dex_enabled ~}
+    # Required so ArgoCD redirects OAuth callbacks correctly
+    server.dex.server: "http://argocd-dex-server:5556"
+%{ endif ~}
   cm:
     admin.enabled: "${admin_enabled}"
+%{ if argocd_url != "" ~}
+    url: "${argocd_url}"
+%{ endif ~}
+%{ if dex_enabled ~}
+    dex.config: |
+      connectors:
+        - type: github
+          id: github
+          name: GitHub
+          config:
+            clientID: ${github_oauth_client_id}
+            clientSecret: ${github_oauth_client_secret}
+%{ if github_org != "" ~}
+            orgs:
+              - name: ${github_org}
+%{ endif ~}
+%{ endif ~}
+  rbac:
+    policy.default: role:readonly
+%{ if github_org != "" ~}
+    policy.csv: |
+      g, ${github_org}:*, role:admin
+%{ endif ~}
+    scopes: "[groups]"
