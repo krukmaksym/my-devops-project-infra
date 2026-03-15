@@ -17,12 +17,16 @@ resource "helm_release" "argocd" {
 
   create_namespace = false
 
-  atomic  = true
-  replace = true
+  atomic          = true
+  cleanup_on_fail = true
+  replace         = var.replace_on_failure
 
   values = concat(
     [templatefile("${path.module}/values.yaml", {
       lb_source_ranges = var.lb_source_ranges
+      server_insecure  = var.server_insecure
+      admin_enabled    = var.admin_enabled
+      environment      = var.environment
     })],
     var.helm_values
   )
