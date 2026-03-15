@@ -44,6 +44,16 @@ locals {
   ]
 }
 
+generate "provider_do" {
+  path      = "provider_do.tf"
+  if_exists = "overwrite_terragrunt"
+  contents  = <<EOF
+provider "digitalocean" {
+  token = var.do_token
+}
+EOF
+}
+
 inputs = merge(
   local.kubernetes[local.env],
   {
