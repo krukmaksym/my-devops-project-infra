@@ -21,7 +21,9 @@ resource "helm_release" "argocd" {
   replace = true
 
   values = concat(
-    [file("${path.module}/values.yaml")],
+    [templatefile("${path.module}/values.yaml", {
+      lb_source_ranges = var.lb_source_ranges
+    })],
     var.helm_values
   )
 }

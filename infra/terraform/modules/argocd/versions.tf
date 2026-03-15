@@ -10,9 +10,5 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.12.0"
     }
-    digitalocean = {
-      source  = "digitalocean/digitalocean"
-      version = ">= 2.0.0"
-    }
   }
 }

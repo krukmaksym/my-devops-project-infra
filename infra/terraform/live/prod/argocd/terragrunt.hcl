@@ -29,7 +29,8 @@ dependency "kubernetes" {
 }
 
 locals {
-  env = "prod"
+  env    = "prod"
+  module = "argocd"
 }
 
 generate "provider_k8s" {
