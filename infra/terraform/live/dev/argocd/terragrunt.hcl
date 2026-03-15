@@ -23,11 +23,6 @@ dependency "kubernetes" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
 }
 
-locals {
-  env    = "dev"
-  module = "argocd"
-}
-
 generate "provider_k8s" {
   path      = "provider_k8s.tf"
   if_exists = "overwrite_terragrunt"

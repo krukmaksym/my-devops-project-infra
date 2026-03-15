@@ -8,6 +8,8 @@ crash.log
 
 # Terragrunt
 .terragrunt-cache/
+provider_k8s.tf
+provider_do.tf
 
 # Local env
 .env
