@@ -8,6 +8,13 @@ global:
     service: monitoring
 
 server:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   service:
     type: LoadBalancer
     annotations:
@@ -27,6 +34,13 @@ server:
       memory: 256Mi
 
 controller:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   resources:
     requests:
       cpu: 250m
@@ -36,6 +50,13 @@ controller:
       memory: 1Gi
 
 repoServer:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   resources:
     requests:
       cpu: 100m
@@ -45,6 +66,13 @@ repoServer:
       memory: 512Mi
 
 redis:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   resources:
     requests:
       cpu: 50m
@@ -65,6 +93,13 @@ redisSecretInit:
 dex:
   enabled: ${dex_enabled}
 %{ if dex_enabled ~}
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   resources:
     requests:
       cpu: 50m
@@ -78,6 +113,13 @@ notifications:
   enabled: false
 
 applicationSet:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
   resources:
     requests:
       cpu: 50m
