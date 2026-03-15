@@ -82,13 +82,7 @@ redis:
       memory: 128Mi
 
 redisSecretInit:
-  tolerations:
-    - key: "service"
-      operator: "Equal"
-      value: "monitoring"
-      effect: "NoSchedule"
-  nodeSelector:
-    service: monitoring
+  enabled: false
 
 dex:
   enabled: ${dex_enabled}

@@ -32,12 +32,6 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
     )
 
     tags = var.tags
-
-    taint {
-      key    = "service"
-      value  = "app"
-      effect = "NoSchedule"
-    }
   }
 }
 
