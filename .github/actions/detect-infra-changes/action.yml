@@ -75,7 +75,7 @@ runs:
 
           # Extract env and module from path: live/dev/network/... -> "dev network"
           live_modules=$(echo "$live_changes" | \
-            grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes|monitoring)" | \
+            grep -E "infra/terraform/live/(dev|stage|prod)/(network|kubernetes|monitoring|argocd)" | \
             sed -E 's|infra/terraform/live/([^/]+)/([^/]+)/.*|\1 \2|' | \
             sort -u || true)
 

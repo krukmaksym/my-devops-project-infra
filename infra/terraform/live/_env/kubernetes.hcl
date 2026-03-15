@@ -3,14 +3,15 @@ locals {
 
   kubernetes = {
     dev = {
-      region       = "fra1"
-      k8s_version  = "1.35.1-do.0"
-      cluster_name = "dev-k8s"
-      node_count   = 2
-      node_size    = "s-2vcpu-2gb"
-      auto_scale   = true
-      min_nodes    = 2
-      max_nodes    = 4
+      region               = "fra1"
+      k8s_version          = "1.35.1-do.0"
+      cluster_name         = "dev-k8s"
+      node_count           = 2
+      node_size            = "s-2vcpu-2gb"
+      auto_scale           = true
+      min_nodes            = 2
+      max_nodes            = 4
+      monitoring_node_size = "s-2vcpu-4gb"
     }
 
     stage = {
