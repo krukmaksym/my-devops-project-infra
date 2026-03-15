@@ -53,6 +53,15 @@ redis:
       cpu: 100m
       memory: 128Mi
 
+redisSecretInit:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+
 dex:
   enabled: ${dex_enabled}
 %{ if dex_enabled ~}
