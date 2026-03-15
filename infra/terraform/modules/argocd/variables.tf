@@ -15,13 +15,9 @@ variable "environment" {
 }
 
 variable "lb_source_ranges" {
-  description = "CIDRs allowed to reach the ArgoCD LoadBalancer"
+  description = "CIDRs allowed to reach the ArgoCD LoadBalancer. Empty list = no loadBalancerSourceRanges set (LB open, secured by HTTPS + auth)."
   type        = list(string)
-
-  validation {
-    condition     = length(var.lb_source_ranges) > 0
-    error_message = "lb_source_ranges must not be empty — restrict LoadBalancer access to known CIDRs."
-  }
+  default     = []
 }
 
 variable "server_insecure" {
