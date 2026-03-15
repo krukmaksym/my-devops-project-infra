@@ -7,6 +7,7 @@ vmsingle:
   spec:
     retentionPeriod: ${retention_period}
     storage:
+      storageClassName: do-block-storage
       accessModes:
         - ReadWriteOnce
       resources:
@@ -29,6 +30,7 @@ grafana:
     enabled: false
   persistence:
     enabled: true
+    storageClassName: do-block-storage
     size: "2Gi"
 
 # Setup easy access for initial testing
