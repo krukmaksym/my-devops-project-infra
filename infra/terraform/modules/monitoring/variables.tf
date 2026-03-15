@@ -10,6 +10,11 @@ variable "retention_period" {
   default     = "14d"
 }
 
+variable "vm_stack_chart_version" {
+  description = "Version of the victoria-metrics-k8s-stack Helm chart to deploy"
+  type        = string
+}
+
 variable "helm_values" {
   description = "List of extra raw values in YAML format to pass to helm"
   type        = list(string)
