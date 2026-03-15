@@ -10,31 +10,66 @@ global:
 server:
   service:
     type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/do-loadbalancer-name: "argocd-${environment}"
 %{ if length(lb_source_ranges) > 0 ~}
     loadBalancerSourceRanges:
 %{ for cidr in lb_source_ranges ~}
       - "${cidr}"
 %{ endfor ~}
 %{ endif ~}
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
 
 controller:
   resources:
     requests:
       cpu: 250m
       memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
 repoServer:
   resources:
     requests:
       cpu: 100m
       memory: 256Mi
+    limits:
+      cpu: 200m
+      memory: 512Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
 
 configs:
   params:
-    # DEV ONLY: disable TLS on the ArgoCD server so the DO LoadBalancer
-    # handles plain HTTP. Do NOT use in stage/prod — configure TLS
-    # termination at the LB or use an ingress with cert-manager instead.
-    server.insecure: true
+    server.insecure: "${server_insecure}"
   cm:
-    # TODO: disable default admin and configure OIDC before stage/prod
-    admin.enabled: "true"
+    admin.enabled: "${admin_enabled}"

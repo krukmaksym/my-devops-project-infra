@@ -20,7 +20,8 @@ resource "helm_release" "victoria_metrics_k8s_stack" {
 
   # Automatically rollback to previous release on failure instead of leaving
   # a broken FAILED release in the cluster (and stuck Terraform state).
-  atomic = true
+  atomic          = true
+  cleanup_on_fail = true
 
   # Allow Terraform to clean up a previously failed release before retrying.
   # Without this, a FAILED release blocks all subsequent applies.

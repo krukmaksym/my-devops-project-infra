@@ -4,19 +4,29 @@ locals {
   argocd = {
     dev = {
       argocd_chart_version = "7.8.13"
-      # Restrict LB access to specific CIDRs. Set your office/VPN IP here.
-      # Example: ["203.0.113.10/32"]
-      lb_source_ranges = []
+      environment          = "dev"
+      server_insecure      = true
+      admin_enabled        = true
+      replace_on_failure   = true
+      lb_source_ranges     = ["85.114.192.213/32"]
     }
 
     stage = {
       argocd_chart_version = "7.8.13"
-      lb_source_ranges     = []
+      environment          = "stage"
+      server_insecure      = false
+      admin_enabled        = false
+      replace_on_failure   = false
+      lb_source_ranges     = ["PLACEHOLDER/32"]
     }
 
     prod = {
       argocd_chart_version = "7.8.13"
-      lb_source_ranges     = []
+      environment          = "prod"
+      server_insecure      = false
+      admin_enabled        = false
+      replace_on_failure   = false
+      lb_source_ranges     = ["PLACEHOLDER/32"]
     }
   }
 }
