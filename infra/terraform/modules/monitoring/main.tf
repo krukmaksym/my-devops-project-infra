@@ -13,14 +13,14 @@ resource "helm_release" "victoria_metrics_k8s_stack" {
   chart      = "victoria-metrics-k8s-stack"
   version    = var.vm_stack_chart_version
   namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
-  timeout    = 900
+  timeout    = 1800
 
   # We use 'create_namespace = false' because we manage it with kubernetes_namespace above
   create_namespace = false
 
-  # Automatically rollback to previous release on failure instead of leaving
-  # a broken FAILED release in the cluster (and stuck Terraform state).
-  atomic = true
+  # Clean up newly-created resources on a failed install/upgrade without
+  # deleting the entire release (which can hang on PVC finalizers).
+  cleanup_on_fail = true
 
   # Allow Terraform to clean up a previously failed release before retrying.
   # Without this, a FAILED release blocks all subsequent applies.
