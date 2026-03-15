@@ -47,34 +47,43 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 ## Current Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      DigitalOcean Cloud                     │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌─────────────────────────────────────────────────────┐    │
-│  │              Environment: dev / stage / prod        │    │
-│  │                                                     │    │
-│  │  ┌──────────────────────────────────────────────┐   │    │
-│  │  │           VPC (10.x.0.0/24)                  │   │    │
-│  │  │                                              │   │    │
-│  │  │  ┌────────────────────────────────────────┐  │   │    │
-│  │  │  │  Kubernetes Cluster (DOKS)             │  │   │    │
-│  │  │  │                                        │  │   │    │
-│  │  │  │  ┌───────────────────────────────────┐ │  │   │    │
-│  │  │  │  │   Application Node Pool           │ │  │   │    │
-│  │  │  │  │   - Auto-scaling (2-10 nodes)     │ │  │   │    │
-│  │  │  │  │   - Tainted for app workloads     │ │  │   │    │
-│  │  │  │  └───────────────────────────────────┘ │  │   │    │
-│  │  │  │                                        │  │   │    │
-│  │  │  │  ┌───────────────────────────────────┐ │  │   │    │
-│  │  │  │  │   Monitoring Node Pool            │ │  │   │    │
-│  │  │  │  │   - Dedicated for observability   │ │  │   │    │
-│  │  │  │  │   - Tainted for monitoring only   │ │  │   │    │
-│  │  │  │  └───────────────────────────────────┘ │  │   │    │
-│  │  │  └────────────────────────────────────────┘  │   │    │
-│  │  └──────────────────────────────────────────────┘   │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                      DigitalOcean Cloud                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐    │
+│  │              Environment: dev / stage / prod          │    │
+│  │                                                       │    │
+│  │  ┌────────────────────────────────────────────────┐   │    │
+│  │  │           VPC (10.x.0.0/24)                    │   │    │
+│  │  │                                                │   │    │
+│  │  │  ┌──────────────────────────────────────────┐  │   │    │
+│  │  │  │  Kubernetes Cluster (DOKS 1.35)          │  │   │    │
+│  │  │  │                                          │  │   │    │
+│  │  │  │  ┌─────────────────────────────────────┐ │  │   │    │
+│  │  │  │  │   Application Node Pool             │ │  │   │    │
+│  │  │  │  │   - Auto-scaling (2-10 nodes)       │ │  │   │    │
+│  │  │  │  │   - Tainted: service=app            │ │  │   │    │
+│  │  │  │  └─────────────────────────────────────┘ │  │   │    │
+│  │  │  │                                          │  │   │    │
+│  │  │  │  ┌─────────────────────────────────────┐ │  │   │    │
+│  │  │  │  │   Monitoring Node Pool (s-2vcpu-4gb)│ │  │   │    │
+│  │  │  │  │   - Tainted: service=monitoring     │ │  │   │    │
+│  │  │  │  │   ┌──────────┐  ┌────────────────┐  │ │  │   │    │
+│  │  │  │  │   │ ArgoCD   │  │ VictoriaMetrics│  │ │  │   │    │
+│  │  │  │  │   │ (GitOps) │  │ + Grafana      │  │ │  │   │    │
+│  │  │  │  │   └──────────┘  └────────────────┘  │ │  │   │    │
+│  │  │  │  │        │                             │ │  │   │    │
+│  │  │  │  └────────┼─────────────────────────────┘ │  │   │    │
+│  │  │  └───────────┼───────────────────────────────┘  │   │    │
+│  │  └──────────────┼──────────────────────────────────┘   │    │
+│  │                 │                                       │    │
+│  │  ┌──────────────▼────────┐                              │    │
+│  │  │  DO Load Balancer     │                              │    │
+│  │  │  (ArgoCD endpoint)    │                              │    │
+│  │  └───────────────────────┘                              │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────┘
 
           │                                    │
           ▼                                    ▼
@@ -91,19 +100,22 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 ### Infrastructure & Platform
 - **IaC**: Terraform 1.14.0 + Terragrunt 0.93.11 (DRY configuration)
 - **Cloud Provider**: DigitalOcean
-- **Container Orchestration**: Kubernetes (DOKS) 1.34.0
+- **Container Orchestration**: Kubernetes (DOKS) 1.35.1
 - **State Management**: Terraform Cloud
 - **Secrets Management**: Doppler
 
-### DevOps Tools (Current)
-- **CI/CD**: GitHub Actions (automated PR validation)
-- **Pre-commit Hooks**: terraform-fmt, terragrunt-fmt
-- **Version Control**: Git
+### DevOps Tools (Implemented)
+- **CI/CD**: GitHub Actions (PR validation, deployment, destroy, AI code review)
+- **GitOps**: ArgoCD (bootstrapped via Terraform, GitHub OAuth SSO prepared)
+- **Observability**: VictoriaMetrics + Grafana (deployed via Helm)
+- **Pre-commit**: terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs
+- **Security Scanning**: Trivy, Checkov, tfsec (in CI pipeline)
 
 ### Planned Stack
-- **GitOps**: ArgoCD + Argo Rollouts
-- **Observability**: VictoriaMetrics, Grafana, Loki, Tempo
-- **Security**: Trivy, Checkov, tfsec, OPA Gatekeeper
+- **GitOps**: Migrate workloads from Terraform Helm to ArgoCD Applications
+- **Observability**: Loki (logging), Tempo (tracing)
+- **Progressive Delivery**: Argo Rollouts (canary, blue-green)
+- **Security**: OPA Gatekeeper, Falco runtime security
 - **Service Mesh**: Istio/Linkerd (future)
 - **Backup**: Velero
 
@@ -115,10 +127,14 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 my-devops-project-infra/
 ├── .github/
 │   ├── actions/                  # Reusable composite actions
+│   │   ├── detect-infra-changes/ # Smart change detection for matrix strategy
 │   │   ├── setup-terragrunt/     # Install Terraform, Terragrunt, Doppler
 │   │   └── terragrunt-exec/      # Execute Terragrunt with Doppler secrets
 │   └── workflows/
-│       └── terraform-pr.yml      # PR validation workflow
+│       ├── terraform-pr.yml      # PR validation (format, validate, plan, security)
+│       ├── terraform-deploy.yml  # Deployment workflow (manual + auto on merge)
+│       ├── destroy-infra.yml     # Infrastructure destroy (with safeguards)
+│       └── claude-review.yml     # AI-powered code review
 ├── .pre-commit-config.yaml      # Pre-commit hooks configuration
 ├── docs/                        # Project documentation
 │   ├── architecture/            # Architecture diagrams
@@ -131,21 +147,30 @@ my-devops-project-infra/
         ├── modules/              # Reusable Terraform modules
         │   ├── network/          # VPC provisioning
         │   ├── kubernetes/       # DOKS cluster + node pools
-        │   └── monitoring/       # VictoriaMetrics observability stack
+        │   ├── monitoring/       # VictoriaMetrics observability stack
+        │   └── argocd/           # ArgoCD GitOps controller
         └── live/                 # Environment-specific configurations
-            ├── root.hcl          # Global Terragrunt config
-            ├── _env/             # Environment variable definitions
+            ├── root.hcl          # Global Terragrunt config (TF Cloud backend)
+            ├── _env/             # Shared environment variable definitions
             │   ├── network.hcl   # Network configs per env
-            │   └── kubernetes.hcl # K8s configs per env
+            │   ├── kubernetes.hcl # K8s configs per env
+            │   ├── monitoring.hcl # Monitoring configs per env
+            │   └── argocd.hcl    # ArgoCD configs per env (phased rollout)
             ├── dev/              # Development environment
             │   ├── network/
-            │   └── kubernetes/
+            │   ├── kubernetes/
+            │   ├── monitoring/
+            │   └── argocd/
             ├── stage/            # Staging environment
             │   ├── network/
-            │   └── kubernetes/
+            │   ├── kubernetes/
+            │   ├── monitoring/
+            │   └── argocd/
             └── prod/             # Production environment
                 ├── network/
-                └── kubernetes/
+                ├── kubernetes/
+                ├── monitoring/
+                └── argocd/
 ```
 
 ---
@@ -211,32 +236,33 @@ doppler --version
 
 ### ✅ Implemented
 
-| Component | Status | Description |
-|-----------|--------|-------------|
-| **Multi-environment setup** | ✅ Complete | dev, stage, prod environments with graduated sizing |
-| **Network module** | ✅ Complete | VPC provisioning with environment-specific CIDR blocks |
-| **Kubernetes module** | ✅ Complete | DOKS cluster with app + monitoring node pools |
-| **Monitoring module** | ✅ Complete | VictoriaMetrics stack with Grafana dashboards |
-| **Terragrunt DRY config** | ✅ Complete | Centralized configuration, minimal duplication |
-| **Doppler integration** | ✅ Complete | Secure secret management via Makefile |
-| **Remote state** | ✅ Complete | Terraform Cloud backend |
-| **Pre-commit (Enhanced)** | ✅ Complete | terraform_fmt, tflint, tfsec, checkov, docs |
-| **Documentation** | ✅ Complete | Architecture diagrams, Troubleshooting guide, Module docs |
-| **Tagging strategy** | ✅ Complete | Consistent tagging across resources |
-| **Auto-scaling** | ✅ Complete | Node pool auto-scaling configured |
-| **Lifecycle protection** | ✅ Complete | prevent_destroy on critical resources |
-| **CI/CD Pipeline** | ✅ Complete | GitHub Actions PR validation, deployment, and destroy workflows |
+| Component | Description |
+|-----------|-------------|
+| **Multi-environment setup** | dev, stage, prod with graduated node sizing |
+| **Network module** | VPC provisioning with environment-specific CIDR blocks |
+| **Kubernetes module** | DOKS 1.35 cluster with app + monitoring node pools, auto-scaling, taints |
+| **Monitoring module** | VictoriaMetrics + Grafana deployed via Helm with tolerations, persistent storage |
+| **ArgoCD module** | GitOps controller bootstrapped via Terraform Helm, DO LoadBalancer, GitHub OAuth SSO prepared (Dex), team-scoped RBAC |
+| **Terragrunt DRY config** | Centralized `_env/` configs, per-module provider generation, mock outputs for CI |
+| **Doppler integration** | Secrets injected as `TF_VAR_*` via Doppler CLI |
+| **Remote state** | Terraform Cloud backend with per-workspace isolation |
+| **CI/CD Pipeline** | 4 GitHub Actions workflows: PR validation (format, validate, plan, security scan), deployment, destroy, AI code review |
+| **Pre-commit hooks** | terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs |
+| **Security scanning** | Trivy + Checkov + tfsec in CI pipeline, Infracost cost estimation |
+| **Auto-scaling** | Node pool auto-scaling (2-10 nodes depending on env) |
+| **Lifecycle protection** | `prevent_destroy` on critical resources, `create_before_destroy` on node pools |
 
-### 🚧 In Progress / Planned
+### 🚧 In Progress / Next Steps
 
-| Component | Priority | Status | Target Completion |
-|-----------|----------|--------|-------------------|
-| **ArgoCD setup** | Medium | 📋 Planned | Week 4-5 |
-| **GitOps workflow** | Medium | 📋 Planned | Week 5-6 |
-| **Observability dashboards** | Medium | 📋 Planned | Week 6-7 |
-| **Security scanning** | High | 📋 Planned | Week 3-4 |
-| **Disaster recovery** | High | 📋 Planned | Week 8-9 |
-| **Cost optimization** | Medium | 📋 Planned | Week 10+ |
+| Component | Priority | Description |
+|-----------|----------|-------------|
+| **ArgoCD HTTPS** | High | Enable TLS on ArgoCD LoadBalancer (cert-manager or DO-managed certs) |
+| **ArgoCD OAuth SSO** | High | Configure GitHub OAuth App, connect Dex, disable admin account |
+| **Migrate monitoring to ArgoCD** | Medium | Move VictoriaMetrics from Terraform Helm to ArgoCD Application |
+| **Grafana dashboards** | Medium | Custom dashboards for cluster and application metrics |
+| **Loki logging** | Medium | Centralized log aggregation |
+| **Progressive delivery** | Low | Argo Rollouts for canary/blue-green deployments |
+| **Disaster recovery** | Low | Velero backup/restore |
 
 ---
 
@@ -265,7 +291,7 @@ Automated deployment workflow triggered on push to `main` or manual workflow dis
 
 **Features:**
 - Manual deployment with environment selection (dev/stage/prod)
-- Resource-specific deployment (network, kubernetes, monitoring, or all)
+- Resource-specific deployment (network, kubernetes, monitoring, argocd, or all)
 - Branch constraints (production deployments only from `main`)
 - Doppler secrets integration
 - Support for both selective and bulk deployments
@@ -285,6 +311,7 @@ Manual workflow for safely destroying infrastructure with safeguards.
 
 - **Module changes** (e.g., `modules/network/main.tf`): Plans ALL environments (dev, stage, prod)
 - **Live changes** (e.g., `live/dev/network/terragrunt.hcl`): Plans only the specific environment
+- **Detected modules**: network, kubernetes, monitoring, argocd
 
 #### Composite Actions
 
@@ -310,123 +337,65 @@ The workflow uses a hybrid approach:
 
 ## Development Roadmap
 
-### Phase 1: Foundation & Security (Weeks 1-4)
+### Phase 1: Foundation (Complete)
 
-#### Week 1: Enhanced Pre-commit & Documentation
-- [x] Enable all pre-commit hooks (terraform_validate, tflint, tfsec, checkov)
-- [x] Auto-generate module documentation with terraform-docs
-- [x] Create architecture diagrams
-- [x] Add troubleshooting guide
+- [x] Multi-environment Terragrunt setup (dev/stage/prod)
+- [x] Network module (VPC per environment)
+- [x] Kubernetes module (DOKS with app + monitoring node pools, taints, auto-scaling)
+- [x] Monitoring module (VictoriaMetrics + Grafana via Helm)
+- [x] Doppler secrets management integration
+- [x] Terraform Cloud remote state
+- [x] Pre-commit hooks (fmt, tflint, tfsec, trivy, checkov, terraform-docs)
+- [x] CI/CD pipelines (PR validation, deployment, destroy, AI code review)
+- [x] Security scanning in CI (Trivy, Checkov, tfsec)
+- [x] Cost estimation (Infracost)
+- [x] Architecture documentation and troubleshooting guide
 
-#### Week 2-3: Monitoring Stack
-- [x] Implement monitoring Terraform module (VictoriaMetrics)
-- [x] Deploy victoria-metrics-k8s-stack via Helm
-- [ ] Configure Grafana dashboards
-- [ ] Set up Loki for centralized logging
-- [ ] Create initial alerting rules
+### Phase 2: GitOps with ArgoCD (In Progress)
 
-#### Week 3-4: Enhanced CI/CD Pipeline
-- [x] Create GitHub Actions PR validation workflow
-- [x] Smart change detection and matrix strategy
-- [x] Parallel validate and plan jobs
-- [x] PR comment with plan summaries
-- [x] Create deployment pipeline
-- [x] Create Infrastructure Destroy pipeline
-- [ ] Add security scanning (trivy, checkov, tfsec)
-- [ ] Cost estimation (Infracost)
-- [ ] Auto-apply on merge to main
-- [ ] Add pipeline status badges
-- [ ] Configure notifications (Slack/Discord)
+- [x] Bootstrap ArgoCD via Terraform Helm chart
+- [x] DigitalOcean LoadBalancer provisioning for ArgoCD UI
+- [x] GitHub OAuth SSO prepared (Dex connector, team-scoped RBAC)
+- [x] Secure secret handling (`set_sensitive` for OAuth client secret)
+- [ ] Enable HTTPS on ArgoCD LB (cert-manager or DO-managed TLS)
+- [ ] Configure GitHub OAuth App and activate Dex SSO
+- [ ] Migrate monitoring stack from Terraform Helm to ArgoCD Application
+- [ ] Implement App-of-Apps pattern for workload management
 
----
+### Phase 3: Observability & Application Deployment
 
-### Phase 2: GitOps & Progressive Delivery (Weeks 4-7)
-
-#### Week 4-5: ArgoCD Implementation
-- [ ] Deploy ArgoCD to K8s cluster
-- [ ] Implement App-of-Apps pattern
-- [ ] Create sample microservice applications
-- [ ] Configure automated sync policies
-- [ ] Set up RBAC and access control
-
-#### Week 6: Application Deployment
-- [ ] Create Helm charts for sample apps
+- [ ] Custom Grafana dashboards for cluster and application metrics
+- [ ] Loki for centralized log aggregation
+- [ ] Tempo for distributed tracing + OpenTelemetry Collector
+- [ ] Alerting rules and on-call notification routing
+- [ ] SLO/SLI definitions with error budget tracking
+- [ ] Sample microservice applications with Helm charts
 - [ ] Environment-specific overlays (dev/stage/prod)
-- [ ] External Secrets Operator integration
-- [ ] Image update automation
 
-#### Week 7: Progressive Delivery
-- [ ] Deploy Argo Rollouts
-- [ ] Implement canary deployment strategy
-- [ ] Configure blue-green deployments
+### Phase 4: Progressive Delivery & Security Hardening
+
+- [ ] Argo Rollouts (canary and blue-green deployment strategies)
 - [ ] Metric-based rollout analysis
-
----
-
-### Phase 3: Advanced Observability (Weeks 7-9)
-
-#### Week 8: Distributed Tracing
-- [ ] Deploy Tempo for distributed tracing
-- [ ] OpenTelemetry Collector setup
-- [ ] Instrument sample applications
-- [ ] Create trace-based dashboards
-
-#### Week 9: SLO/SLI Implementation
-- [ ] Define Service Level Objectives
-- [ ] Implement SLI monitoring
-- [ ] Error budget tracking
-- [ ] SLO burn rate alerting
-
----
-
-### Phase 4: Production Hardening (Weeks 10-13)
-
-#### Week 10: Testing & Quality
-- [ ] Implement Terratest for infrastructure testing
-- [ ] Add contract tests for APIs
-- [ ] Chaos engineering experiments (LitmusChaos)
-- [ ] Load testing with K6
-
-#### Week 11: Security Hardening
-- [ ] Pod Security Standards implementation
-- [ ] Network policies for micro-segmentation
+- [ ] Pod Security Standards
+- [ ] Network policies for namespace isolation
 - [ ] OPA Gatekeeper policies
-- [ ] Falco runtime security
-- [ ] Image scanning in CI/CD
+- [ ] Falco runtime security monitoring
 
-#### Week 12: Disaster Recovery
-- [ ] Velero backup/restore setup
-- [ ] Database backup automation
-- [ ] Document RTO/RPO
-- [ ] Conduct DR drill
+### Phase 5: Production Hardening
 
-#### Week 13: Cost Optimization
-- [ ] Deploy Kubecost
-- [ ] Implement resource quotas
-- [ ] Right-sizing recommendations
-- [ ] Cost reporting dashboard
+- [ ] Velero backup/restore
+- [ ] Disaster recovery procedures (documented RTO/RPO)
+- [ ] Kubecost for cost visibility
+- [ ] Resource quotas and right-sizing
+- [ ] Terratest for infrastructure testing
+- [ ] Chaos engineering (LitmusChaos)
 
----
+### Phase 6: Platform Engineering (Future)
 
-### Phase 5: Advanced Features (Weeks 14+)
-
-#### Service Mesh (Optional)
-- [ ] Evaluate Istio vs Linkerd
-- [ ] Implement mTLS between services
-- [ ] Advanced traffic management
-- [ ] Observability integration
-
-#### Platform Engineering
-- [ ] Deploy Backstage developer portal
-- [ ] Self-service infrastructure templates
-- [ ] Golden path documentation
-- [ ] Developer onboarding automation
-
-#### Multi-Cluster (Advanced)
-- [ ] Implement cluster federation
+- [ ] Service mesh evaluation (Istio/Linkerd)
+- [ ] Backstage developer portal
+- [ ] Multi-cluster federation
 - [ ] Multi-region deployment
-- [ ] Global load balancing
-- [ ] Cross-cluster service discovery
 
 ---
 
@@ -487,6 +456,21 @@ kubectl get nodes
 kubectl get pods --all-namespaces
 ```
 
+### Accessing ArgoCD
+
+```bash
+# Port-forward to ArgoCD server (Phase 1 — before HTTPS is configured)
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# Get the initial admin password
+kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d
+
+# Open https://localhost:8080 and login with user "admin"
+
+# Get the LoadBalancer external IP (reserved for future HTTPS setup)
+kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
 ---
 
 ## Module Documentation
@@ -535,11 +519,30 @@ Deploys VictoriaMetrics observability stack to Kubernetes clusters.
 - Grafana for visualization
 - Kubernetes metrics collection
 - Customizable retention period
-- Helm-based deployment
+- Helm-based deployment with atomic rollback
 
-**Inputs**: See [variables.tf](infra/terraform/modules/kubernetes/variables.tf)
+**Inputs**: See [variables.tf](infra/terraform/modules/monitoring/variables.tf)
 
 **Outputs**: Namespace name, Helm release status
+
+### ArgoCD Module
+
+**Location**: [infra/terraform/modules/argocd/](infra/terraform/modules/argocd/)
+
+Bootstraps ArgoCD as the GitOps controller via Helm chart, with a LoadBalancer for UI access.
+
+**Features**:
+- ArgoCD deployed via `argo-cd` Helm chart (pinned version)
+- DigitalOcean LoadBalancer for external access
+- GitHub OAuth SSO via Dex (conditionally enabled)
+- Team-scoped RBAC (`github_admin_team` variable)
+- OAuth client secret kept out of Helm values via `set_sensitive`
+- Atomic rollback on failed upgrades
+- Phased rollout: LB provisioned first, HTTPS and OAuth configured later
+
+**Inputs**: See [variables.tf](infra/terraform/modules/argocd/variables.tf)
+
+**Outputs**: Namespace, Helm release name, Helm release status
 
 ---
 
@@ -553,25 +556,29 @@ Deploys VictoriaMetrics observability stack to Kubernetes clusters.
 - ✅ State locking
 
 ### Security
-- ✅ Sensitive outputs marked appropriately
 - ✅ Secrets managed via Doppler (not in code)
+- ✅ Sensitive Terraform outputs and `set_sensitive` for Helm secrets
 - ✅ Lifecycle protection on critical resources
-- ✅ Pre-commit hooks for validation
-- 🚧 Security scanning in CI/CD (planned)
-- 🚧 RBAC and least privilege (planned)
+- ✅ Pre-commit hooks (tflint, tfsec, trivy, checkov)
+- ✅ Security scanning in CI pipeline (Trivy, Checkov, tfsec)
+- ✅ ArgoCD RBAC with team-scoped admin, default readonly
+- 🚧 Network policies (planned)
+- 🚧 OPA Gatekeeper (planned)
 
 ### Operational Excellence
-- ✅ Multi-environment strategy
-- ✅ Automated deployments via Makefile
-- ✅ Consistent tagging
-- ✅ Node pool isolation
-- 🚧 Comprehensive monitoring (planned)
+- ✅ Multi-environment strategy with graduated sizing
+- ✅ Automated deployments via Makefile and CI/CD
+- ✅ GitOps foundation with ArgoCD
+- ✅ Monitoring stack (VictoriaMetrics + Grafana)
+- ✅ Node pool isolation via taints/tolerations
+- ✅ Atomic Helm rollbacks on failure
 - 🚧 Disaster recovery procedures (planned)
 
 ### Cost Optimization
 - ✅ Auto-scaling enabled
 - ✅ Right-sized node pools per environment
-- 🚧 Cost monitoring and alerting (planned)
+- ✅ Cost estimation via Infracost in CI
+- 🚧 Kubecost for runtime cost visibility (planned)
 
 ---
 
@@ -579,15 +586,15 @@ Deploys VictoriaMetrics observability stack to Kubernetes clusters.
 
 This project showcases proficiency in:
 
-- **Infrastructure as Code**: Terraform + Terragrunt advanced patterns
-- **Cloud Platforms**: DigitalOcean Kubernetes (DOKS)
-- **Container Orchestration**: Kubernetes architecture and operations
-- **Secrets Management**: External secret management with Doppler
-- **GitOps**: Infrastructure and application deployment workflows (planned)
-- **Observability**: Metrics, logging, tracing, and alerting (planned)
-- **CI/CD**: Automated testing and deployment pipelines (planned)
-- **Security**: Scanning, policies, and hardening (planned)
-- **SRE Practices**: SLOs, incident response, disaster recovery (planned)
+- **Infrastructure as Code**: Terraform + Terragrunt advanced patterns (DRY configs, mock outputs, per-module providers)
+- **Cloud Platforms**: DigitalOcean Kubernetes (DOKS) with VPC, node pools, load balancers
+- **Container Orchestration**: Kubernetes node taints/tolerations, auto-scaling, namespace isolation
+- **GitOps**: ArgoCD bootstrapped via Terraform, phased rollout strategy
+- **Secrets Management**: Doppler integration, `set_sensitive` for Helm secrets
+- **Observability**: VictoriaMetrics + Grafana monitoring stack
+- **CI/CD**: GitHub Actions with smart change detection, matrix strategy, security scanning, AI code review
+- **Security**: Pre-commit hooks, CI security scanning (Trivy, Checkov, tfsec), RBAC, sensitive value handling
+- **SRE Practices**: Atomic rollbacks, node pool isolation, auto-scaling, cost estimation
 
 ---
 
@@ -631,15 +638,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Metric | Value |
 |--------|-------|
 | Environments | 3 (dev, stage, prod) |
-| Terraform Modules | 3 (network, kubernetes, monitoring) |
-| Lines of Terraform Code | ~346 |
+| Terraform Modules | 4 (network, kubernetes, monitoring, argocd) |
+| Lines of HCL/YAML | ~718 |
 | Cloud Regions | 1 (fra1) |
-| Kubernetes Versions | 1.34.0-do.0 |
-| Total Nodes (dev) | 2-4 (auto-scaled) |
-| GitHub Actions Workflows | 3 (PR validation, deployment, destroy) |
+| Kubernetes Version | 1.35.1-do.0 |
+| Total Nodes (dev) | 3-5 (auto-scaled: 2-4 app + 1 monitoring) |
+| GitHub Actions Workflows | 4 (PR validation, deployment, destroy, AI review) |
 
 ---
 
 **Status**: 🚧 Active Development
-**Last Updated**: 2026-01-04
-**Version**: 0.4.0 (Monitoring Stack & Enhanced CI/CD)
+**Last Updated**: 2026-03-15
+**Version**: 0.5.0 (ArgoCD GitOps Bootstrap)
