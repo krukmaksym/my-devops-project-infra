@@ -97,7 +97,7 @@ configs:
           name: GitHub
           config:
             clientID: ${github_oauth_client_id}
-            clientSecret: ${github_oauth_client_secret}
+            clientSecret: $dex.github.clientSecret
 %{ if github_org != "" ~}
             orgs:
               - name: ${github_org}
@@ -107,6 +107,6 @@ configs:
     policy.default: role:readonly
 %{ if github_org != "" ~}
     policy.csv: |
-      g, ${github_org}:*, role:admin
+      g, ${github_org}:${github_admin_team != "" ? github_admin_team : "*"}, role:admin
 %{ endif ~}
     scopes: "[groups]"

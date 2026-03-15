@@ -57,14 +57,14 @@ variable "github_org" {
   default     = ""
 }
 
-variable "argocd_url" {
-  description = "External URL of ArgoCD (e.g. http://<LB-IP>) — required for OAuth callback"
+variable "github_admin_team" {
+  description = "GitHub team slug granted ArgoCD admin (e.g. 'platform'). Empty = all org members get admin."
   type        = string
   default     = ""
 }
 
-variable "helm_values" {
-  description = "Additional Helm values to pass to the ArgoCD chart"
-  type        = list(string)
-  default     = []
+variable "argocd_url" {
+  description = "External URL of ArgoCD (e.g. http://<LB-IP>) — required for OAuth callback"
+  type        = string
+  default     = ""
 }
