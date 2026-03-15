@@ -63,7 +63,7 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 │  │  │  │  ┌─────────────────────────────────────┐ │  │   │    │
 │  │  │  │  │   Application Node Pool             │ │  │   │    │
 │  │  │  │  │   - Auto-scaling (2-10 nodes)       │ │  │   │    │
-│  │  │  │  │   - Tainted: service=app            │ │  │   │    │
+│  │  │  │  │   - No taint (hosts system pods)    │ │  │   │    │
 │  │  │  │  └─────────────────────────────────────┘ │  │   │    │
 │  │  │  │                                          │  │   │    │
 │  │  │  │  ┌─────────────────────────────────────┐ │  │   │    │
@@ -240,7 +240,7 @@ doppler --version
 |-----------|-------------|
 | **Multi-environment setup** | dev, stage, prod with graduated node sizing |
 | **Network module** | VPC provisioning with environment-specific CIDR blocks |
-| **Kubernetes module** | DOKS 1.35 cluster with app + monitoring node pools, auto-scaling, taints |
+| **Kubernetes module** | DOKS 1.35 cluster with app + monitoring node pools, auto-scaling, monitoring pool taint |
 | **Monitoring module** | VictoriaMetrics + Grafana deployed via Helm with tolerations, persistent storage |
 | **ArgoCD module** | GitOps controller bootstrapped via Terraform Helm, DO LoadBalancer, GitHub OAuth SSO prepared (Dex), team-scoped RBAC |
 | **Terragrunt DRY config** | Centralized `_env/` configs, per-module provider generation, mock outputs for CI |
@@ -459,16 +459,28 @@ kubectl get pods --all-namespaces
 ### Accessing ArgoCD
 
 ```bash
-# Port-forward to ArgoCD server (Phase 1 — before HTTPS is configured)
-kubectl port-forward svc/argocd-server -n argocd 8080:443
+# Port-forward to ArgoCD server (Phase 1 — server.insecure=true, HTTP only)
+kubectl port-forward svc/argocd-server -n argocd 8080:80
 
 # Get the initial admin password
 kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' | base64 -d
 
-# Open https://localhost:8080 and login with user "admin"
+# Open http://localhost:8080 and login with user "admin"
 
 # Get the LoadBalancer external IP (reserved for future HTTPS setup)
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+### Accessing Grafana
+
+```bash
+# Port-forward to Grafana
+kubectl port-forward svc/vm-stack-grafana -n monitoring 3000:80
+
+# Get the admin password
+kubectl get secret vm-stack-grafana -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d
+
+# Open http://localhost:3000 and login with user "admin"
 ```
 
 ---
@@ -499,8 +511,8 @@ Provisions a DOKS cluster with separate node pools for applications and monitori
 
 **Features**:
 - Auto-scaling node pools
-- Dedicated monitoring node pool
-- Node taints and tolerations
+- Dedicated monitoring node pool (tainted `service=monitoring:NoSchedule`)
+- App pool untainted to allow DO system components (CoreDNS, CSI driver)
 - Auto-upgrade enabled
 - Maintenance window configuration
 
@@ -534,6 +546,7 @@ Bootstraps ArgoCD as the GitOps controller via Helm chart, with a LoadBalancer f
 **Features**:
 - ArgoCD deployed via `argo-cd` Helm chart (pinned version)
 - DigitalOcean LoadBalancer for external access
+- Redis auth secret pre-created via Terraform (`redisSecretInit` job disabled)
 - GitHub OAuth SSO via Dex (conditionally enabled)
 - Team-scoped RBAC (`github_admin_team` variable)
 - OAuth client secret kept out of Helm values via `set_sensitive`
@@ -570,7 +583,7 @@ Bootstraps ArgoCD as the GitOps controller via Helm chart, with a LoadBalancer f
 - ✅ Automated deployments via Makefile and CI/CD
 - ✅ GitOps foundation with ArgoCD
 - ✅ Monitoring stack (VictoriaMetrics + Grafana)
-- ✅ Node pool isolation via taints/tolerations
+- ✅ Node pool isolation (monitoring taint + nodeSelector, untainted app pool for system pods)
 - ✅ Atomic Helm rollbacks on failure
 - 🚧 Disaster recovery procedures (planned)
 
