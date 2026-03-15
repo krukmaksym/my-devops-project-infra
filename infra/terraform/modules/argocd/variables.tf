@@ -22,6 +22,11 @@ variable "lb_source_ranges" {
     condition     = length(var.lb_source_ranges) > 0
     error_message = "lb_source_ranges must not be empty — restrict LoadBalancer access to known CIDRs."
   }
+
+  validation {
+    condition     = alltrue([for cidr in var.lb_source_ranges : !startswith(cidr, "PLACEHOLDER")])
+    error_message = "lb_source_ranges contains a PLACEHOLDER value — replace with real CIDRs before applying."
+  }
 }
 
 variable "server_insecure" {

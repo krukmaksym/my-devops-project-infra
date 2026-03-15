@@ -15,25 +15,27 @@ locals {
     }
 
     stage = {
-      region       = "fra1"
-      k8s_version  = "1.35.1-do.0"
-      cluster_name = "stage-k8s"
-      node_count   = 3
-      node_size    = "s-2vcpu-4gb"
-      auto_scale   = true
-      min_nodes    = 3
-      max_nodes    = 6
+      region               = "fra1"
+      k8s_version          = "1.35.1-do.0"
+      cluster_name         = "stage-k8s"
+      node_count           = 3
+      node_size            = "s-2vcpu-4gb"
+      auto_scale           = true
+      min_nodes            = 3
+      max_nodes            = 6
+      monitoring_node_size = "s-2vcpu-4gb"
     }
 
     prod = {
-      region       = "fra1"
-      k8s_version  = "1.35.1-do.0"
-      cluster_name = "prod-k8s"
-      node_count   = 3
-      node_size    = "s-2vcpu-8gb"
-      auto_scale   = true
-      min_nodes    = 3
-      max_nodes    = 10
+      region               = "fra1"
+      k8s_version          = "1.35.1-do.0"
+      cluster_name         = "prod-k8s"
+      node_count           = 3
+      node_size            = "s-2vcpu-8gb"
+      auto_scale           = true
+      min_nodes            = 3
+      max_nodes            = 10
+      monitoring_node_size = "s-2vcpu-4gb"
     }
   }
 
