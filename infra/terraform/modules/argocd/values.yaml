@@ -1,0 +1,16 @@
+global:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+
+server:
+  service:
+    type: LoadBalancer
+
+configs:
+  params:
+    server.insecure: true
