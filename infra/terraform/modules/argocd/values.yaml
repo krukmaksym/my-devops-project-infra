@@ -56,13 +56,6 @@ redis:
 dex:
   enabled: ${dex_enabled}
 %{ if dex_enabled ~}
-  tolerations:
-    - key: "service"
-      operator: "Equal"
-      value: "monitoring"
-      effect: "NoSchedule"
-  nodeSelector:
-    service: monitoring
   resources:
     requests:
       cpu: 50m
