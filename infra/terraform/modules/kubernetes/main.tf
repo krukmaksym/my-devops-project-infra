@@ -13,7 +13,8 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
     start_time = "03:00"
   }
 
-  # Default application node pool
+  # Default node pool — no taint so DO-managed system components
+  # (CoreDNS, CSI driver, konnectivity) can schedule here.
   node_pool {
     name       = "${var.environment}-app-pool"
     size       = var.node_size
@@ -35,7 +36,8 @@ resource "digitalocean_kubernetes_cluster" "k8s" {
   }
 }
 
-# Dedicated node pool for monitoring stack (Prometheus, Grafana, Alertmanager, etc.)
+# Dedicated node pool for monitoring stack (VictoriaMetrics, Grafana, ArgoCD).
+# Tainted to prevent application workloads from landing here.
 resource "digitalocean_kubernetes_node_pool" "monitoring" {
   cluster_id = digitalocean_kubernetes_cluster.k8s.id
 
