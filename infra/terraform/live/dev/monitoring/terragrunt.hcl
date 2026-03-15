@@ -2,6 +2,10 @@ include "root" {
   path = find_in_parent_folders("root.hcl")
 }
 
+include "env" {
+  path = "${get_terragrunt_dir()}/../../_env/monitoring.hcl"
+}
+
 terraform {
   source = "../../../modules/monitoring"
 }
@@ -24,8 +28,8 @@ dependency "kubernetes" {
 }
 
 locals {
-  env     = "dev"
-  module  = "monitoring"
+  env    = "dev"
+  module = "monitoring"
 }
 
 generate "provider_k8s" {
