@@ -27,10 +27,15 @@ resource "helm_release" "argocd" {
 
   values = concat(
     [templatefile("${path.module}/values.yaml", {
-      lb_source_ranges = var.lb_source_ranges
-      server_insecure  = var.server_insecure
-      admin_enabled    = var.admin_enabled
-      environment      = var.environment
+      lb_source_ranges           = var.lb_source_ranges
+      server_insecure            = var.server_insecure
+      admin_enabled              = var.admin_enabled
+      environment                = var.environment
+      dex_enabled                = var.github_oauth_client_id != ""
+      argocd_url                 = var.argocd_url
+      github_oauth_client_id     = var.github_oauth_client_id
+      github_oauth_client_secret = var.github_oauth_client_secret
+      github_org                 = var.github_org
     })],
     var.helm_values
   )
