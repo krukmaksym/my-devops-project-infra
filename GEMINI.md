@@ -28,3 +28,5 @@ Provide your review in clean Markdown.
 # Contextual Instructions
 - Compare changes across `dev`, `stage`, and `prod` to ensure consistency.
 - Be professional but direct. Focus on high-signal SRE principles.
+
+<!-- Cosmetic change for testing gemini-code-review -->
