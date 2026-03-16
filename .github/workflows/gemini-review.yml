@@ -61,12 +61,12 @@ jobs:
           git diff origin/"$BASE_BRANCH"...HEAD > pr_diff.patch
           
           # 4. Run Gemini review using the locally checked out instructions
-          # Use npx for a clean environment and pipe the diff directly
-          cat pr_diff.patch | npx -y @google/gemini-cli@latest \
+          # Avoid bash quoting issues and exit failures by piping the context directly and adding || true
+          cat GEMINI.md pr_diff.patch | npx -y @google/gemini-cli@latest \
             --yolo \
             --model "gemini-flash-lite-latest" \
-            --prompt "Review this pull request carefully and strictly follow the project-specific guardrails and instructions provided in the repository's GEMINI.md file. Context: $(cat GEMINI.md)" \
-            --output-format text > review_output.md
+            --prompt "Review this pull request carefully and strictly follow the project-specific guardrails and instructions provided. The piped input contains the GEMINI.md guardrails followed by the code diff." \
+            --output-format text > review_output.md || true
           
           # 5. Post the comment if the output is not empty
           if [ -s review_output.md ]; then
