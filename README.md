@@ -105,7 +105,7 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 - **Secrets Management**: Doppler
 
 ### DevOps Tools (Implemented)
-- **CI/CD**: GitHub Actions (PR validation, deployment, destroy, AI code review)
+- **CI/CD**: GitHub Actions (PR validation, deployment, destroy, AI code review via Claude & Gemini)
 - **GitOps**: ArgoCD (bootstrapped via Terraform, GitHub OAuth SSO prepared)
 - **Observability**: VictoriaMetrics + Grafana (deployed via Helm)
 - **Pre-commit**: terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs
@@ -134,7 +134,10 @@ my-devops-project-infra/
 │       ├── terraform-pr.yml      # PR validation (format, validate, plan, security)
 │       ├── terraform-deploy.yml  # Deployment workflow (manual + auto on merge)
 │       ├── destroy-infra.yml     # Infrastructure destroy (with safeguards)
-│       └── claude-review.yml     # AI-powered code review
+│       ├── claude-review.yml     # AI-powered code review
+│       └── gemini-review.yml    # Gemini CLI PR review (on @gemini-cli comment)
+├── CLAUDE.md                    # Claude code review instructions & guardrails
+├── GEMINI.md                    # Gemini code review instructions & guardrails
 ├── .pre-commit-config.yaml      # Pre-commit hooks configuration
 ├── docs/                        # Project documentation
 │   ├── architecture/            # Architecture diagrams
@@ -219,6 +222,8 @@ doppler --version
    # Repository secrets (Settings > Secrets and variables > Actions):
    # - DOPPLER_TOKEN: Your Doppler service token
    # - TF_CLOUD_TOKEN: Your Terraform Cloud API token
+   # - ANTHROPIC_API_KEY: Anthropic API key (for @claude PR reviews)
+   # - GEMINI_API_KEY: Google Gemini API key (for @gemini-cli PR reviews)
    ```
 
 6. **Initialize and plan infrastructure**
@@ -246,7 +251,7 @@ doppler --version
 | **Terragrunt DRY config** | Centralized `_env/` configs, per-module provider generation, mock outputs for CI |
 | **Doppler integration** | Secrets injected as `TF_VAR_*` via Doppler CLI |
 | **Remote state** | Terraform Cloud backend with per-workspace isolation |
-| **CI/CD Pipeline** | 4 GitHub Actions workflows: PR validation (format, validate, plan, security scan), deployment, destroy, AI code review |
+| **CI/CD Pipeline** | 5 GitHub Actions workflows: PR validation, deployment, destroy, AI code review (Claude), Gemini PR review |
 | **Pre-commit hooks** | terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs |
 | **Security scanning** | Trivy + Checkov + tfsec in CI pipeline, Infracost cost estimation |
 | **Auto-scaling** | Node pool auto-scaling (2-10 nodes depending on env) |
@@ -270,7 +275,7 @@ doppler --version
 
 ### GitHub Actions Workflows
 
-The project includes three automated GitHub Actions workflows for comprehensive infrastructure management:
+The project includes five GitHub Actions workflows for comprehensive infrastructure management:
 
 #### 1. PR Validation Workflow ([`terraform-pr.yml`](.github/workflows/terraform-pr.yml))
 
@@ -306,6 +311,28 @@ Manual workflow for safely destroying infrastructure with safeguards.
 - Resource-specific destruction
 - Smart network exclusion (prevents "Cannot delete default VPC" error)
 - Strict dependency handling with `--queue-strict-include`
+
+#### 4. Claude Code Review Workflow ([`claude-review.yml`](.github/workflows/claude-review.yml))
+
+On-demand AI code review triggered by commenting `@claude` on an open pull request. Uses the [anthropics/claude-code-action](https://github.com/anthropics/claude-code-action) action with project-specific review instructions defined in [`CLAUDE.md`](CLAUDE.md).
+
+**Features:**
+- Triggered by `@claude` comment on any open PR (`issue_comment` event)
+- Security gate blocks execution for forked PRs to protect secrets
+- Reviews the PR diff for security, Terraform/Terragrunt best practices, state management, cost impact, and breaking changes
+- Posts review as a sticky PR comment with severity levels (critical, warning, suggestion)
+- Uses `ANTHROPIC_API_KEY` secret with scoped tool access (`Bash(gh *)`, `Read`, `Glob`, `Grep`)
+
+#### 5. Gemini Code Review Workflow ([`gemini-review.yml`](.github/workflows/gemini-review.yml))
+
+On-demand AI code review triggered by commenting `@gemini-cli` on an open pull request. Uses the [google-github-actions/run-gemini-cli](https://github.com/google-github-actions/run-gemini-cli) action with project-specific review instructions defined in [`GEMINI.md`](GEMINI.md).
+
+**Features:**
+- Triggered by `@gemini-cli` comment on any open PR (`issue_comment` event)
+- Security gate blocks execution for forked PRs to protect secrets
+- Reviews the PR diff following project-specific guardrails (secrets, DOKS node pools, GitOps migration, Terragrunt DRY, lifecycle safety)
+- Posts structured review feedback as a PR comment (TL;DR, Architecture Health Table, detailed findings)
+- Uses `gemini-flash-lite-latest` model via `GEMINI_API_KEY` secret
 
 #### Change Detection Logic
 
@@ -656,10 +683,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Cloud Regions | 1 (fra1) |
 | Kubernetes Version | 1.35.1-do.0 |
 | Total Nodes (dev) | 3-5 (auto-scaled: 2-4 app + 1 monitoring) |
-| GitHub Actions Workflows | 4 (PR validation, deployment, destroy, AI review) |
+| GitHub Actions Workflows | 5 (PR validation, deployment, destroy, Claude review, Gemini review) |
 
 ---
 
 **Status**: 🚧 Active Development
-**Last Updated**: 2026-03-15
+**Last Updated**: 2026-03-16
 **Version**: 0.5.0 (ArgoCD GitOps Bootstrap)
