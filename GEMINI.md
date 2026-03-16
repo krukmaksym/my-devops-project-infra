@@ -30,3 +30,4 @@ Provide your review in clean Markdown.
 - Be professional but direct. Focus on high-signal SRE principles.
 
 <!-- Cosmetic change for testing gemini-code-review -->
+<!-- A second cosmetic change after merging the fix! -->
