@@ -51,5 +51,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: "gemini-1.5-flash"
+          gemini_model: "gemini-1.5-pro"
           prompt: "Review this pull request carefully and strictly follow the project-specific guardrails and instructions provided in the repository's GEMINI.md file."
