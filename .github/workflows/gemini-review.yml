@@ -58,6 +58,6 @@ jobs:
       - name: Post PR Comment
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_RESPONSE: ${{ steps.gemini.outputs.gemini_response }}
+          GEMINI_RESPONSE: ${{ steps.gemini.outputs.response }}
         run: |
           printf "%s\n" "$GEMINI_RESPONSE" | gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body-file -
