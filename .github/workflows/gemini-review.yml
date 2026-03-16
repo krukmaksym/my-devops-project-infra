@@ -52,12 +52,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: "gemini-3-flash-preview"
+          gemini_model: "gemini-flash-lite-latest"
           prompt: "Review this pull request carefully and strictly follow the project-specific guardrails and instructions provided in the repository's GEMINI.md file."
 
       - name: Post PR Comment
+        if: steps.gemini.outputs.gemini_response != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_RESPONSE: ${{ steps.gemini.outputs.response }}
+          GEMINI_RESPONSE: ${{ steps.gemini.outputs.gemini_response }}
         run: |
           printf "%s\n" "$GEMINI_RESPONSE" | gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body-file -
