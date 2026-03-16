@@ -47,6 +47,7 @@ jobs:
 
       - name: Gemini Code Review
         id: gemini
+        continue-on-error: true
         uses: google-github-actions/run-gemini-cli@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,9 +57,9 @@ jobs:
           prompt: "Review this pull request carefully and strictly follow the project-specific guardrails and instructions provided in the repository's GEMINI.md file."
 
       - name: Post PR Comment
-        if: steps.gemini.outputs.gemini_response != ''
+        if: (success() || failure()) && steps.gemini.outputs.summary != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GEMINI_RESPONSE: ${{ steps.gemini.outputs.gemini_response }}
+          GEMINI_RESPONSE: ${{ steps.gemini.outputs.summary }}
         run: |
           printf "%s\n" "$GEMINI_RESPONSE" | gh pr comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body-file -
