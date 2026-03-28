@@ -1,0 +1,96 @@
+victoria-metrics-operator:
+  enabled: true
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+  admissionWebhooks:
+    cleanup:
+      tolerations:
+        - key: "service"
+          operator: "Equal"
+          value: "monitoring"
+          effect: "NoSchedule"
+      nodeSelector:
+        service: monitoring
+
+vmsingle:
+  enabled: true
+  spec:
+    retentionPeriod: "30d"
+    tolerations:
+      - key: "service"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+    nodeSelector:
+      service: monitoring
+    storage:
+      storageClassName: do-block-storage
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: "30Gi"
+
+vmcluster:
+  enabled: false
+
+vmagent:
+  enabled: true
+  spec:
+    tolerations:
+      - key: "service"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+    nodeSelector:
+      service: monitoring
+
+vmalert:
+  enabled: true
+  spec:
+    tolerations:
+      - key: "service"
+        operator: "Equal"
+        value: "monitoring"
+        effect: "NoSchedule"
+    nodeSelector:
+      service: monitoring
+
+grafana:
+  enabled: true
+  ingress:
+    enabled: false
+  persistence:
+    enabled: true
+    storageClassName: do-block-storage
+    size: "2Gi"
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+
+kube-state-metrics:
+  tolerations:
+    - key: "service"
+      operator: "Equal"
+      value: "monitoring"
+      effect: "NoSchedule"
+  nodeSelector:
+    service: monitoring
+
+prometheus-node-exporter:
+  tolerations:
+    - key: "service"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+serviceAccount:
+  create: true

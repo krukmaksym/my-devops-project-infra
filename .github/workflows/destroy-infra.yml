@@ -21,7 +21,7 @@ on:
           - all
           - network
           - kubernetes
-          - monitoring
+          - argocd
       confirmation:
         description: 'Type "DESTROY" to confirm'
         required: true

@@ -67,3 +67,45 @@ resource "helm_release" "argocd" {
     }
   ] : []
 }
+
+# Bootstrap the App-of-Apps root Application via the argocd-apps Helm chart.
+# Using a helm_release (rather than kubernetes_manifest) avoids the CRD-at-plan-time
+# issue: Helm only creates the Application resources during apply, after the ArgoCD
+# Helm release above has already installed the argoproj.io CRDs.
+resource "helm_release" "argocd_apps" {
+  name       = "argocd-apps"
+  repository = "https://argoproj.github.io/argo-helm"
+  chart      = "argocd-apps"
+  version    = var.argocd_apps_chart_version
+  namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
+
+  depends_on = [helm_release.argocd]
+
+  atomic          = true
+  cleanup_on_fail = true
+
+  values = [yamlencode({
+    applications = [
+      {
+        name       = "root-app"
+        project    = "default"
+        finalizers = ["resources-finalizer.argocd.argoproj.io"]
+        source = {
+          repoURL        = var.gitops_repo_url
+          targetRevision = var.gitops_revision
+          path           = "gitops/apps/${var.environment}"
+        }
+        destination = {
+          server    = "https://kubernetes.default.svc"
+          namespace = kubernetes_namespace_v1.argocd.metadata[0].name
+        }
+        syncPolicy = {
+          automated = {
+            prune    = true
+            selfHeal = true
+          }
+        }
+      }
+    ]
+  })]
+}

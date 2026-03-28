@@ -9,6 +9,12 @@ variable "argocd_chart_version" {
   type        = string
 }
 
+variable "argocd_apps_chart_version" {
+  description = "Helm chart version for argocd-apps (App-of-Apps bootstrap)"
+  type        = string
+  default     = "2.0.2"
+}
+
 variable "environment" {
   description = "Environment name (used for LB naming)"
   type        = string
@@ -67,4 +73,19 @@ variable "argocd_url" {
   description = "External URL of ArgoCD (e.g. http://<LB-IP>) — required for OAuth callback"
   type        = string
   default     = ""
+}
+
+variable "gitops_repo_url" {
+  # Assumes a public repository — no ArgoCD repository secret is required.
+  # If the repo becomes private, add a kubernetes_secret_v1 with label
+  # argocd.argoproj.io/secret-type=repository and inject credentials via
+  # Doppler (TF_VAR_gitops_repo_token).
+  description = "Git repository URL ArgoCD watches for Application manifests"
+  type        = string
+}
+
+variable "gitops_revision" {
+  description = "Git branch/tag ArgoCD tracks (e.g. main)"
+  type        = string
+  default     = "main"
 }

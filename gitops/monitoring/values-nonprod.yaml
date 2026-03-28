@@ -17,11 +17,10 @@ victoria-metrics-operator:
       nodeSelector:
         service: monitoring
 
-# Single-node configuration for cost efficiency
 vmsingle:
   enabled: true
   spec:
-    retentionPeriod: ${retention_period}
+    retentionPeriod: "14d"
     tolerations:
       - key: "service"
         operator: "Equal"
@@ -37,7 +36,6 @@ vmsingle:
         requests:
           storage: "10Gi"
 
-# Disable cluster version by default
 vmcluster:
   enabled: false
 
@@ -94,6 +92,5 @@ prometheus-node-exporter:
       operator: "Exists"
       effect: "NoSchedule"
 
-# Setup easy access for initial testing
 serviceAccount:
   create: true

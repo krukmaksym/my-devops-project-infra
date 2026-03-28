@@ -25,7 +25,7 @@ on:
           - all
           - network
           - kubernetes
-          - monitoring
+          - argocd
 
 env:
   TERRAFORM_VERSION: '1.14.0'
