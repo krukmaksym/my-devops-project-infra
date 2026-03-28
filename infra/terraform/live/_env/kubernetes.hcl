@@ -4,7 +4,7 @@ locals {
   kubernetes = {
     dev = {
       region               = "fra1"
-      k8s_version          = "1.35.1-do.0"
+      k8s_version          = "1.35.1-do.1"
       cluster_name         = "dev-k8s"
       node_count           = 2
       node_size            = "s-2vcpu-2gb"
@@ -16,7 +16,7 @@ locals {
 
     stage = {
       region               = "fra1"
-      k8s_version          = "1.35.1-do.0"
+      k8s_version          = "1.35.1-do.1"
       cluster_name         = "stage-k8s"
       node_count           = 3
       node_size            = "s-2vcpu-4gb"
@@ -28,7 +28,7 @@ locals {
 
     prod = {
       region               = "fra1"
-      k8s_version          = "1.35.1-do.0"
+      k8s_version          = "1.35.1-do.1"
       cluster_name         = "prod-k8s"
       node_count           = 3
       node_size            = "s-2vcpu-8gb"
