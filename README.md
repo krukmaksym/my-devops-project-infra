@@ -372,8 +372,8 @@ The workflow uses a hybrid approach:
 - [x] Secure secret handling (`set_sensitive` for OAuth client secret)
 - [ ] Enable HTTPS on ArgoCD LB (cert-manager or DO-managed TLS)
 - [ ] Configure GitHub OAuth App and activate Dex SSO
-- [ ] Migrate monitoring stack from Terraform Helm to ArgoCD Application
-- [ ] Implement App-of-Apps pattern for workload management
+- [x] Migrate monitoring stack from Terraform Helm to ArgoCD Application
+- [x] Implement App-of-Apps pattern for workload management
 
 ### Phase 3: Observability & Application Deployment
 
@@ -483,6 +483,47 @@ kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.pas
 # Get the LoadBalancer external IP (reserved for future HTTPS setup)
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
+
+### GitOps Promotion (dev → stage → prod)
+
+Each environment tracks its own Git revision, controlled via `infra/terraform/live/_env/argocd.hcl`:
+
+| Environment | Default revision | Strategy |
+|-------------|-----------------|----------|
+| `dev`       | `main`          | Tracks `main` continuously — every merged commit is deployed automatically |
+| `stage`     | pinned tag      | Promoted deliberately by updating `gitops_revision_stage` |
+| `prod`      | pinned tag      | Promoted deliberately by updating `gitops_revision_prod` |
+
+#### Promoting a release to stage or prod
+
+1. **Create and push a release tag** from the commit you want to promote:
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+
+2. **Update the revision in `_env/argocd.hcl`**:
+   ```hcl
+   gitops_revision_stage = "v1.2.3"   # or gitops_revision_prod
+   ```
+
+3. **Commit and push**:
+   ```bash
+   git add infra/terraform/live/_env/argocd.hcl
+   git commit -m "chore: promote v1.2.3 to stage"
+   git push origin main
+   ```
+
+4. **Apply ArgoCD via Terragrunt** (or let the CI pipeline pick it up):
+   ```bash
+   cd infra/terraform/live/stage/argocd
+   doppler run --name-transformer tf-var -- terragrunt apply
+   ```
+   Terraform updates the `argocd-apps` Helm release, which patches the root `Application`'s `targetRevision`. ArgoCD detects the change and syncs the stage cluster to the new tag.
+
+> **Note**: `prod` uses `prune: false` — removed manifests are never auto-deleted. After a tag promotion, manually sync or delete stale resources in the ArgoCD UI if needed.
+
+---
 
 ### Accessing Grafana
 

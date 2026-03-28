@@ -1,10 +1,22 @@
 locals {
   env = basename(dirname(get_terragrunt_dir()))
 
-  # Shared GitOps config — single source of truth for all environments.
-  # To promote stage/prod to a specific release, change gitops_revision per env.
+  # GitOps repository — shared across all environments.
   gitops_repo_url = "https://github.com/krukmaksym/my-devops-project-infra"
-  gitops_revision = "main"
+
+  # Per-environment GitOps revision (branch or tag).
+  # dev always tracks main. stage/prod are pinned to a release tag and
+  # promoted deliberately via the "Promote to Environment" GitHub Actions
+  # workflow (.github/workflows/promote.yml), which creates the tag and
+  # opens a PR bumping the revision here.
+  #
+  # To promote manually:
+  #   1. git tag v1.2.3 && git push origin v1.2.3
+  #   2. Update gitops_revision_stage / gitops_revision_prod below
+  #   3. Commit, push, open PR → merge → terragrunt apply argocd
+  gitops_revision_dev   = "main"
+  gitops_revision_stage = "main" # TODO: pin to a release tag once stage cluster is provisioned
+  gitops_revision_prod  = "main" # TODO: pin to a release tag once prod cluster is provisioned
 
   # Phase 1 (this PR): Bootstrap ArgoCD + provision DigitalOcean LoadBalancer.
   #   - LB is created to reserve an external IP for future use.
@@ -35,7 +47,7 @@ locals {
       github_org                 = ""
       github_admin_team          = ""
       gitops_repo_url            = local.gitops_repo_url
-      gitops_revision            = local.gitops_revision
+      gitops_revision            = local.gitops_revision_dev
     }
 
     stage = {
@@ -52,7 +64,7 @@ locals {
       github_org                 = ""
       github_admin_team          = ""
       gitops_repo_url            = local.gitops_repo_url
-      gitops_revision            = local.gitops_revision
+      gitops_revision            = local.gitops_revision_stage
     }
 
     prod = {
@@ -69,7 +81,7 @@ locals {
       github_org                 = ""
       github_admin_team          = ""
       gitops_repo_url            = local.gitops_repo_url
-      gitops_revision            = local.gitops_revision
+      gitops_revision            = local.gitops_revision_prod
     }
   }
 }
