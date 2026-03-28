@@ -364,19 +364,19 @@ The workflow uses a hybrid approach:
 - [x] Cost estimation (Infracost)
 - [x] Architecture documentation and troubleshooting guide
 
-### Phase 2: GitOps with ArgoCD (In Progress)
+### Phase 2: GitOps with ArgoCD (Complete)
 
 - [x] Bootstrap ArgoCD via Terraform Helm chart
 - [x] DigitalOcean LoadBalancer provisioning for ArgoCD UI
 - [x] GitHub OAuth SSO prepared (Dex connector, team-scoped RBAC)
 - [x] Secure secret handling (`set_sensitive` for OAuth client secret)
-- [ ] Enable HTTPS on ArgoCD LB (cert-manager or DO-managed TLS)
-- [ ] Configure GitHub OAuth App and activate Dex SSO
 - [x] Migrate monitoring stack from Terraform Helm to ArgoCD Application
 - [x] Implement App-of-Apps pattern for workload management
 
-### Phase 3: Observability & Application Deployment
+### Phase 3: ArgoCD Hardening & Observability (In Progress)
 
+- [ ] Enable HTTPS on ArgoCD LB (cert-manager or DO-managed TLS)
+- [ ] Configure GitHub OAuth App and activate Dex SSO
 - [ ] Custom Grafana dashboards for cluster and application metrics
 - [ ] Loki for centralized log aggregation
 - [ ] Tempo for distributed tracing + OpenTelemetry Collector
