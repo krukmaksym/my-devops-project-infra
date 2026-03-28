@@ -84,10 +84,12 @@ resource "helm_release" "argocd_apps" {
   atomic          = true
   cleanup_on_fail = true
 
+  # argocd-apps chart v2.x changed 'applications' from a list to a map.
+  # The map key becomes metadata.name — passing a list caused Helm to use
+  # the numeric array index as the name, triggering a type unmarshal error.
   values = [yamlencode({
-    applications = [
-      {
-        name       = "root-app"
+    applications = {
+      "root-app" = {
         project    = "default"
         finalizers = ["resources-finalizer.argocd.argoproj.io"]
         source = {
@@ -106,6 +108,6 @@ resource "helm_release" "argocd_apps" {
           }
         }
       }
-    ]
+    }
   })]
 }
