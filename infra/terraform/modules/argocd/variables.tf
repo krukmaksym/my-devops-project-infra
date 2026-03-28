@@ -9,6 +9,12 @@ variable "argocd_chart_version" {
   type        = string
 }
 
+variable "argocd_apps_chart_version" {
+  description = "Helm chart version for argocd-apps (App-of-Apps bootstrap)"
+  type        = string
+  default     = "2.0.2"
+}
+
 variable "environment" {
   description = "Environment name (used for LB naming)"
   type        = string

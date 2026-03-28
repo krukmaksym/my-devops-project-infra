@@ -76,7 +76,7 @@ resource "helm_release" "argocd_apps" {
   name       = "argocd-apps"
   repository = "https://argoproj.github.io/argo-helm"
   chart      = "argocd-apps"
-  version    = "2.0.2"
+  version    = var.argocd_apps_chart_version
   namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
 
   depends_on = [helm_release.argocd]
