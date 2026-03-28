@@ -105,7 +105,7 @@ This project serves as a comprehensive demonstration of Senior DevOps and SRE ca
 - **Secrets Management**: Doppler
 
 ### DevOps Tools (Implemented)
-- **CI/CD**: GitHub Actions (PR validation, deployment, destroy, AI code review via Claude & Gemini)
+- **CI/CD**: GitHub Actions (PR validation, deployment, destroy, AI code review via Claude)
 - **GitOps**: ArgoCD (bootstrapped via Terraform, GitHub OAuth SSO prepared)
 - **Observability**: VictoriaMetrics + Grafana (deployed via Helm)
 - **Pre-commit**: terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs
@@ -134,10 +134,8 @@ my-devops-project-infra/
 │       ├── terraform-pr.yml      # PR validation (format, validate, plan, security)
 │       ├── terraform-deploy.yml  # Deployment workflow (manual + auto on merge)
 │       ├── destroy-infra.yml     # Infrastructure destroy (with safeguards)
-│       ├── claude-review.yml     # AI-powered code review
-│       └── gemini-review.yml    # Gemini CLI PR review (on @gemini-cli comment)
+│       └── claude-review.yml     # AI-powered code review (on @claude comment)
 ├── CLAUDE.md                    # Claude code review instructions & guardrails
-├── GEMINI.md                    # Gemini code review instructions & guardrails
 ├── .pre-commit-config.yaml      # Pre-commit hooks configuration
 ├── docs/                        # Project documentation
 │   ├── architecture/            # Architecture diagrams
@@ -223,7 +221,6 @@ doppler --version
    # - DOPPLER_TOKEN: Your Doppler service token
    # - TF_CLOUD_TOKEN: Your Terraform Cloud API token
    # - ANTHROPIC_API_KEY: Anthropic API key (for @claude PR reviews)
-   # - GEMINI_API_KEY: Google Gemini API key (for @gemini-cli PR reviews)
    ```
 
 6. **Initialize and plan infrastructure**
@@ -251,7 +248,7 @@ doppler --version
 | **Terragrunt DRY config** | Centralized `_env/` configs, per-module provider generation, mock outputs for CI |
 | **Doppler integration** | Secrets injected as `TF_VAR_*` via Doppler CLI |
 | **Remote state** | Terraform Cloud backend with per-workspace isolation |
-| **CI/CD Pipeline** | 5 GitHub Actions workflows: PR validation, deployment, destroy, AI code review (Claude), Gemini PR review |
+| **CI/CD Pipeline** | 4 GitHub Actions workflows: PR validation, deployment, destroy, AI code review (Claude) |
 | **Pre-commit hooks** | terraform-fmt, terragrunt-fmt, tflint, tfsec, trivy, checkov, terraform-docs |
 | **Security scanning** | Trivy + Checkov + tfsec in CI pipeline, Infracost cost estimation |
 | **Auto-scaling** | Node pool auto-scaling (2-10 nodes depending on env) |
@@ -323,22 +320,11 @@ On-demand AI code review triggered by commenting `@claude` on an open pull reque
 - Posts review as a sticky PR comment with severity levels (critical, warning, suggestion)
 - Uses `ANTHROPIC_API_KEY` secret with scoped tool access (`Bash(gh *)`, `Read`, `Glob`, `Grep`)
 
-#### 5. Gemini Code Review Workflow ([`gemini-review.yml`](.github/workflows/gemini-review.yml))
-
-On-demand AI code review triggered by commenting `@gemini-cli` on an open pull request. Uses the [google-github-actions/run-gemini-cli](https://github.com/google-github-actions/run-gemini-cli) action with project-specific review instructions defined in [`GEMINI.md`](GEMINI.md).
-
-**Features:**
-- Triggered by `@gemini-cli` comment on any open PR (`issue_comment` event)
-- Security gate blocks execution for forked PRs to protect secrets
-- Reviews the PR diff following project-specific guardrails (secrets, DOKS node pools, GitOps migration, Terragrunt DRY, lifecycle safety)
-- Posts structured review feedback as a PR comment (TL;DR, Architecture Health Table, detailed findings)
-- Uses `gemini-flash-lite-latest` model via `GEMINI_API_KEY` secret
-
 #### Change Detection Logic
 
 - **Module changes** (e.g., `modules/network/main.tf`): Plans ALL environments (dev, stage, prod)
 - **Live changes** (e.g., `live/dev/network/terragrunt.hcl`): Plans only the specific environment
-- **Detected modules**: network, kubernetes, monitoring, argocd
+- **Detected modules**: network, kubernetes, argocd
 
 #### Composite Actions
 
@@ -683,7 +669,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 | Cloud Regions | 1 (fra1) |
 | Kubernetes Version | 1.35.1-do.0 |
 | Total Nodes (dev) | 3-5 (auto-scaled: 2-4 app + 1 monitoring) |
-| GitHub Actions Workflows | 5 (PR validation, deployment, destroy, Claude review, Gemini review) |
+| GitHub Actions Workflows | 4 (PR validation, deployment, destroy, Claude review) |
 
 ---
 
