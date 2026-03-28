@@ -1,12 +1,13 @@
 name: Terraform PR Validation
 
-# Trigger on PRs to main that modify terraform files or this workflow
+# Trigger on all PRs to main.
+# No paths filter — Security Gate and Detect Changed Modules are required
+# status checks in branch protection, so the workflow must always run to
+# report a status. Downstream jobs are already gated on has_changes == 'true'
+# and only run when Terraform files actually changed.
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'infra/terraform/**'
-      - '.github/workflows/terraform-pr.yml'
 
 # Read repo content, write PR comments
 permissions:
