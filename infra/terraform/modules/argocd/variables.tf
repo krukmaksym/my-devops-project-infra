@@ -68,3 +68,14 @@ variable "argocd_url" {
   type        = string
   default     = ""
 }
+
+variable "gitops_repo_url" {
+  description = "Git repository URL ArgoCD watches for Application manifests"
+  type        = string
+}
+
+variable "gitops_revision" {
+  description = "Git branch/tag ArgoCD tracks (e.g. main)"
+  type        = string
+  default     = "main"
+}

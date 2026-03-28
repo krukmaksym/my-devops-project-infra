@@ -28,6 +28,8 @@ locals {
       github_oauth_client_secret = ""
       github_org                 = ""
       github_admin_team          = ""
+      gitops_repo_url            = "https://github.com/krukmaksym/my-devops-project-infra"
+      gitops_revision            = "main"
     }
 
     stage = {
@@ -42,6 +44,8 @@ locals {
       github_oauth_client_secret = ""
       github_org                 = ""
       github_admin_team          = ""
+      gitops_repo_url            = "https://github.com/krukmaksym/my-devops-project-infra"
+      gitops_revision            = "main"
     }
 
     prod = {
@@ -56,6 +60,8 @@ locals {
       github_oauth_client_secret = ""
       github_org                 = ""
       github_admin_team          = ""
+      gitops_repo_url            = "https://github.com/krukmaksym/my-devops-project-infra"
+      gitops_revision            = "main"
     }
   }
 }
