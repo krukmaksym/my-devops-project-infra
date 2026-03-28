@@ -81,6 +81,9 @@ resource "helm_release" "argocd_apps" {
 
   depends_on = [helm_release.argocd]
 
+  atomic          = true
+  cleanup_on_fail = true
+
   values = [yamlencode({
     applications = [
       {

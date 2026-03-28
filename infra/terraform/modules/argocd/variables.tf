@@ -70,6 +70,10 @@ variable "argocd_url" {
 }
 
 variable "gitops_repo_url" {
+  # Assumes a public repository — no ArgoCD repository secret is required.
+  # If the repo becomes private, add a kubernetes_secret_v1 with label
+  # argocd.argoproj.io/secret-type=repository and inject credentials via
+  # Doppler (TF_VAR_gitops_repo_token).
   description = "Git repository URL ArgoCD watches for Application manifests"
   type        = string
 }

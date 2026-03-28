@@ -22,7 +22,7 @@ spec:
     namespace: monitoring
   syncPolicy:
     automated:
-      prune: true
+      prune: false  # never auto-delete prod resources; require manual sync
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

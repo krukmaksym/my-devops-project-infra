@@ -18,7 +18,7 @@ spec:
       targetRevision: "0.72.4"
       helm:
         valueFiles:
-          - $values/gitops/monitoring/values-dev.yaml
+          - $values/gitops/monitoring/values-nonprod.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
