@@ -63,6 +63,61 @@ jobs:
         run: |
           (curl -Ls https://cli.doppler.com/install.sh || wget -qO- https://cli.doppler.com/install.sh) | sudo sh
 
+      - name: Strip ArgoCD Application Finalizers
+        continue-on-error: true
+        run: |
+          RESOURCE="${{ inputs.resource || 'all' }}"
+          TARGET_ENV="${{ inputs.environment }}"
+
+          # Only needed when argocd resources are being destroyed
+          if [ "$RESOURCE" == "network" ] || [ "$RESOURCE" == "kubernetes" ]; then
+            echo "Skipping finalizer cleanup (resource=$RESOURCE)"
+            exit 0
+          fi
+
+          export DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }}
+          export TF_TOKEN_app_terraform_io=${{ secrets.TF_CLOUD_TOKEN }}
+          export TG_NON_INTERACTIVE=true
+
+          strip_argocd_finalizers() {
+            local env=$1
+            local k8s_dir="infra/terraform/live/${env}/kubernetes"
+
+            echo "→ Getting kubeconfig for ${env}..."
+            KUBECONFIG_FILE=$(mktemp /tmp/kubeconfig-XXXXXX)
+            ERR_FILE=$(mktemp /tmp/kubeconfig-err-XXXXXX)
+            trap 'rm -f "${KUBECONFIG_FILE}" "${ERR_FILE}"' RETURN
+
+            (cd "${k8s_dir}" && doppler run --name-transformer tf-var -- \
+              terragrunt output -raw kubeconfig) > "${KUBECONFIG_FILE}" 2>"${ERR_FILE}" || true
+
+            if [ ! -s "${KUBECONFIG_FILE}" ]; then
+              echo "  No kubeconfig for ${env} — terragrunt output said:"
+              cat "${ERR_FILE}" || true
+              return
+            fi
+
+            echo "→ Stripping finalizers from ArgoCD Applications in ${env}..."
+            kubectl --kubeconfig="${KUBECONFIG_FILE}" get applications.argoproj.io \
+              -A --no-headers -o custom-columns="NS:.metadata.namespace,NAME:.metadata.name" 2>/dev/null | \
+            while read -r ns name; do
+              [ -z "$name" ] && continue
+              echo "  Patching ${ns}/${name}"
+              kubectl --kubeconfig="${KUBECONFIG_FILE}" patch application.argoproj.io "${name}" \
+                -n "${ns}" --type=merge -p '{"metadata":{"finalizers":null}}' 2>/dev/null || true
+            done
+
+            echo "  Done for ${env}"
+          }
+
+          if [ "$TARGET_ENV" == "all" ]; then
+            for env in dev stage prod; do
+              strip_argocd_finalizers "$env" || echo "⚠️  Finalizer cleanup failed for ${env} — destroy may be slower"
+            done
+          else
+            strip_argocd_finalizers "$TARGET_ENV" || echo "⚠️  Finalizer cleanup failed for ${TARGET_ENV} — destroy may be slower"
+          fi
+
       - name: Destroy Infrastructure
         run: |
           TARGET_ENV="${{ inputs.environment }}"
