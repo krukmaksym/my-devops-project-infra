@@ -78,6 +78,7 @@ resource "helm_release" "argocd_apps" {
   chart      = "argocd-apps"
   version    = var.argocd_apps_chart_version
   namespace  = kubernetes_namespace_v1.argocd.metadata[0].name
+  timeout    = 600
 
   depends_on = [helm_release.argocd]
 
